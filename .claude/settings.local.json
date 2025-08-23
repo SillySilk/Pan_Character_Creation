@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__spec-workflow__spec-workflow-guide",
+      "mcp__spec-workflow__get-steering-context",
+      "mcp__filesystem__list_directory",
+      "mcp__spec-workflow__get-template-context",
+      "mcp__spec-workflow__create-spec-doc",
+      "mcp__spec-workflow__get-approval-status",
+      "mcp__spec-workflow__manage-tasks",
+      "Bash(npm create:*)",
+      "Bash(npm run build:*)",
+      "mcp__filesystem__create_directory",
+      "Bash(npm run dev:*)",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__edit_file",
+      "Bash(npm test)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
+      "Bash(rm:*)",
+      "Bash(npm run test:*)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(taskkill:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

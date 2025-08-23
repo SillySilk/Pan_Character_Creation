@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PanCasting Table Mapper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .category {
+            margin-bottom: 30px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .category-header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .category-content {
+            padding: 15px;
+        }
+        .table-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 5px;
+        }
+        .table-item:last-child {
+            border-bottom: none;
+        }
+        .table-id {
+            background: #3498db;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+            margin-right: 15px;
+        }
+        .table-name {
+            font-weight: bold;
+            margin-right: 15px;
+            flex: 1;
+        }
+        .table-status {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .implemented {
+            background: #27ae60;
+            color: white;
+        }
+        .missing {
+            background: #e74c3c;
+            color: white;
+        }
+        .referenced {
+            background: #f39c12;
+            color: white;
+        }
+        .table-refs {
+            margin-left: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+        .stats {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PanCasting Character Generation Table Map</h1>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number" id="implemented-count">0</div>
+                <div class="stat-label">Implemented</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="missing-count">0</div>
+                <div class="stat-label">Missing</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="referenced-count">0</div>
+                <div class="stat-label">Referenced Only</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="total-count">0</div>
+                <div class="stat-label">Total Tables</div>
+            </div>
+        </div>
+
+        <div id="table-categories"></div>
+    </div>
+
+    <script>
+        // Table data based on PanCasting structure
+        const tableData = {
+            "100s - Heritage & Birth": {
+                "101a": { name: "Race Determination", status: "implemented", refs: [] },
+                "101b": { name: "Crossbreed Types", status: "referenced", refs: ["101a"] },
+                "102": { name: "Cultural Background", status: "implemented", refs: [] },
+                "103": { name: "Social Status", status: "implemented", refs: [] },
+                "104": { name: "Birth Circumstances", status: "implemented", refs: [] }
+            },
+            "200s - Youth Events": {
+                "209": { name: "Childhood Events", status: "implemented", refs: [] },
+                "220": { name: "Adolescence Events", status: "implemented", refs: [] }
+            },
+            "300s - Occupations & Skills": {
+                "309": { name: "Apprenticeships", status: "implemented", refs: [] },
+                "310": { name: "Civilized Occupations", status: "implemented", refs: ["419"] },
+                "314": { name: "Hobbies", status: "implemented", refs: [] }
+            },
+            "400s - Adulthood Events": {
+                "419": { name: "Adulthood Events", status: "implemented", refs: [] }
+            },
+            "500s - Personality & Values": {
+                "501": { name: "Values & Motivations", status: "missing", refs: [] },
+                "502": { name: "Personality Traits", status: "missing", refs: [] }
+            },
+            "600s - Miscellaneous Events": {
+                "624": { name: "Tragedy", status: "implemented", refs: ["419"] },
+                "625": { name: "Something Wonderful", status: "implemented", refs: ["419"] },
+                "627": { name: "Elven Events", status: "implemented", refs: ["101a"] },
+                "628": { name: "Dwarven Events", status: "implemented", refs: ["101a"] },
+                "629": { name: "Halfling Events", status: "implemented", refs: ["101a"] },
+                "630": { name: "Unusual Heritage", status: "implemented", refs: ["101a"] },
+                "639": { name: "Religious Events", status: "implemented", refs: ["220"] },
+                "640": { name: "Romantic Encounters", status: "implemented", refs: ["419"] },
+                "642": { name: "Unusual Events", status: "implemented", refs: ["104"] }
+            },
+            "700s - Contacts & Relationships": {
+                "701": { name: "Allies & Contacts", status: "missing", refs: [] },
+                "702": { name: "Enemies & Rivals", status: "missing", refs: [] }
+            },
+            "800s - Special Items & Gifts": {
+                "801": { name: "Special Items", status: "missing", refs: [] },
+                "802": { name: "Inherited Items", status: "missing", refs: [] }
+            }
+        };
+
+        function renderTables() {
+            const container = document.getElementById('table-categories');
+            let implementedCount = 0;
+            let missingCount = 0;
+            let referencedCount = 0;
+            let totalCount = 0;
+
+            Object.entries(tableData).forEach(([category, tables]) => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category';
+
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.textContent = category;
+                categoryDiv.appendChild(header);
+
+                const content = document.createElement('div');
+                content.className = 'category-content';
+
+                Object.entries(tables).forEach(([id, table]) => {
+                    totalCount++;
+                    
+                    const tableDiv = document.createElement('div');
+                    tableDiv.className = 'table-item';
+
+                    const idSpan = document.createElement('span');
+                    idSpan.className = 'table-id';
+                    idSpan.textContent = id;
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'table-name';
+                    nameSpan.textContent = table.name;
+
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = `table-status ${table.status}`;
+                    statusSpan.textContent = table.status.toUpperCase();
+
+                    tableDiv.appendChild(idSpan);
+                    tableDiv.appendChild(nameSpan);
+                    tableDiv.appendChild(statusSpan);
+
+                    if (table.refs.length > 0) {
+                        const refsSpan = document.createElement('div');
+                        refsSpan.className = 'table-refs';
+                        refsSpan.textContent = `Referenced by: ${table.refs.join(', ')}`;
+                        tableDiv.appendChild(refsSpan);
+                    }
+
+                    content.appendChild(tableDiv);
+
+                    // Count stats
+                    switch (table.status) {
+                        case 'implemented':
+                            implementedCount++;
+                            break;
+                        case 'missing':
+                            missingCount++;
+                            break;
+                        case 'referenced':
+                            referencedCount++;
+                            break;
+                    }
+                });
+
+                categoryDiv.appendChild(content);
+                container.appendChild(categoryDiv);
+            });
+
+            // Update stats
+            document.getElementById('implemented-count').textContent = implementedCount;
+            document.getElementById('missing-count').textContent = missingCount;
+            document.getElementById('referenced-count').textContent = referencedCount;
+            document.getElementById('total-count').textContent = totalCount;
+        }
+
+        // Render on page load
+        renderTables();
+    </script>
+</body>
+</html>
