@@ -417,6 +417,29 @@ export class TableEngine {
       }
     }
 
+    // Special handling for youth tables - ensure they always create youth events
+    if (table.category === 'youth' && (table.id === '209' || table.id === '220')) {
+      // Check if there's already an event effect
+      const hasEventEffect = entry.effects?.some(e => e.type === 'event' && e.target === 'youthEvents')
+      
+      if (!hasEventEffect) {
+        // Create a youth event automatically
+        const youthEvent = {
+          type: 'event',
+          target: 'youthEvents',
+          value: {
+            name: entry.result,
+            description: entry.description || `${entry.result} during youth`,
+            age: table.id === '209' ? '1d12' : '13+1d6',
+            significance: 'Minor'
+          }
+        }
+        
+        const processedEvent = this.processEventEffect(youthEvent, character, table)
+        effects.push(processedEvent)
+      }
+    }
+
     return effects
   }
 
@@ -442,7 +465,7 @@ export class TableEngine {
       case 'occupation':
         return this.processOccupationEffect(effect, character)
       case 'event':
-        return this.processEventEffect(effect, character)
+        return this.processEventEffect(effect, character, _table)
       default:
         this.log(`Unknown effect type: ${effect.type}`)
         return effect
@@ -655,17 +678,66 @@ export class TableEngine {
   /**
    * Process event effects
    */
-  private processEventEffect(effect: any, _character: Partial<Character>): any {
-    this.log(`Event effect: ${effect.eventName}`)
+  private processEventEffect(effect: any, character: Partial<Character>, table?: any): any {
+    this.log(`Event effect: ${effect.target} - ${JSON.stringify(effect.value)}`)
+    
+    // Apply event to character based on target
+    if (effect.target === 'youthEvents' && effect.value) {
+      // Initialize youthEvents if not present
+      if (!character.youthEvents) {
+        character.youthEvents = []
+      }
+      
+      // Determine period from table context
+      let period = 'Childhood'
+      if (table?.lifePeriod === 'adolescence' || table?.id === '220') {
+        period = 'Adolescence'
+      } else if (table?.lifePeriod === 'childhood' || table?.id === '209') {
+        period = 'Childhood'
+      } else {
+        period = this.determineYouthPeriod(effect.value.age)
+      }
+      
+      // Create the event object with proper period information
+      const eventObj = {
+        name: effect.value.name,
+        description: effect.value.description,
+        age: effect.value.age,
+        significance: effect.value.significance || 'Minor',
+        period: period,
+        result: effect.value.name  // For compatibility with character sheet
+      }
+      
+      character.youthEvents.push(eventObj)
+      this.log(`Added youth event: ${eventObj.name} (${eventObj.period})`)
+    }
     
     return {
       type: 'event',
-      eventName: effect.eventName,
+      eventName: effect.value?.name || effect.eventName,
       eventCategory: effect.eventCategory,
-      description: effect.description,
-      age: effect.age,
-      significance: effect.significance || 'Minor'
+      description: effect.value?.description || effect.description,
+      age: effect.value?.age || effect.age,
+      significance: effect.value?.significance || effect.significance || 'Minor'
     }
+  }
+  
+  /**
+   * Determine youth period based on age or other context
+   */
+  private determineYouthPeriod(age: any): 'Childhood' | 'Adolescence' {
+    // If age is a dice expression, assume childhood for now
+    if (typeof age === 'string') {
+      return 'Childhood'  // Could roll dice here in future
+    }
+    
+    // If age is a number
+    if (typeof age === 'number') {
+      return age <= 12 ? 'Childhood' : 'Adolescence'
+    }
+    
+    // Default to Childhood
+    return 'Childhood'
   }
 
   /**

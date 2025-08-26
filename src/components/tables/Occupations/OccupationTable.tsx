@@ -213,26 +213,11 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
     )
   }
 
-  // Debug: Log table structure
-  console.log('🔍 OccupationTable render: Table structure:', {
-    id: table.id,
-    name: table.name,
-    entriesCount: table.entries?.length,
-    firstEntry: table.entries?.[0],
-    occupationType,
-    loading,
-    selectedEntry: !!selectedEntry
-  })
 
   const colors = getOccupationTypeColor()
 
   return (
     <div className="space-y-6">
-      {/* Debug Info */}
-      <div className="p-2 bg-yellow-100 border border-yellow-300 rounded text-sm">
-        🔍 <strong>Table Debug:</strong> {table.name} ({table.id}) - {table.entries?.length} entries - Type: {occupationType}
-      </div>
-      
       {/* Table Header */}
       <div className="bg-parchment-100 border-2 border-amber-600 rounded-lg p-4">
         <div className="flex items-center gap-3 mb-2">

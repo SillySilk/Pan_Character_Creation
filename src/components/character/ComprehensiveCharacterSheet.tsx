@@ -196,12 +196,12 @@ export function ComprehensiveCharacterSheet({
       fields: [
         { 
           label: 'Childhood Events', 
-          value: character?.youthEvents?.filter(e => e.period === 'Childhood').length || 0,
+          value: character?.youthEvents?.filter(e => e.period === 'Childhood')?.map(e => e.name || e.result).join(', ') || 'Upcoming',
           status: getFieldStatus(character?.youthEvents?.filter(e => e.period === 'Childhood'))
         },
         { 
           label: 'Adolescent Events', 
-          value: character?.youthEvents?.filter(e => e.period === 'Adolescence').length || 0,
+          value: character?.youthEvents?.filter(e => e.period === 'Adolescence')?.map(e => e.name || e.result).join(', ') || 'Upcoming',
           status: getFieldStatus(character?.youthEvents?.filter(e => e.period === 'Adolescence'))
         }
       ]
@@ -269,11 +269,6 @@ export function ComprehensiveCharacterSheet({
             (character.personalityTraits.darkside?.length || 0) +
             (character.personalityTraits.exotic?.length || 0)} traits` : 'Upcoming',
           status: getFieldStatus(character?.personalityTraits)
-        },
-        { 
-          label: 'Values', 
-          value: character?.values?.mostValuedPerson ? 'Defined' : 'Upcoming',
-          status: getFieldStatus(character?.values?.mostValuedPerson)
         },
         { 
           label: 'Alignment', 

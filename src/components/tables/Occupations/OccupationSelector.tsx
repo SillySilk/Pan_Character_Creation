@@ -136,6 +136,13 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
     }
   }
 
+  const handleContinue = () => {
+    nextStep()
+    if (onComplete) {
+      onComplete()
+    }
+  }
+
   const getTotalSkills = () => {
     const allOccupations = [...apprenticeships, ...civilizedOccupations, ...hobbies]
     const skills = new Map()
@@ -562,9 +569,29 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
             opportunities and relationships throughout their adult life.
           </p>
           
-          <div className="flex items-center text-green-700">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
-            <span>Proceeding to adult life events...</span>
+          <div className="mt-6 space-y-3">
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-green-700">
+                Review your occupations and skills above. Your character is ready for adult life!
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={handleContinue}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md"
+              >
+                Continue to Adult Life Events →
+              </button>
+              
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-3 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg font-medium transition-colors border border-amber-300"
+                title="Start character generation over"
+              >
+                🔄 Restart Generation
+              </button>
+            </div>
           </div>
         </div>
       )}
