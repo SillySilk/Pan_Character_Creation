@@ -2,26 +2,27 @@
 // Supports both D&D 3.5 and D&D 5e
 
 import type { Character } from '@/types/character'
-import type { 
-  DDStats, 
-  DDCharacterSheet, 
-  DDClassSuggestion, 
+import type {
+  DDStats,
+  DDCharacterSheet,
+  DDClassSuggestion,
   DDExportOptions,
   DDExportResult,
   DDConverter,
-  DDValidation 
+  DDValidation
 } from '@/types/dnd'
-import type { 
-  DD5eStats, 
-  DD5eCharacterSheet, 
+import type {
+  DD5eStats,
+  DD5eCharacterSheet,
   DD5eClassSuggestion,
   DD5eBackgroundSuggestion,
   DD5eExportOptions,
   DD5eConverter,
   DD5eValidation,
   DD5eAbilityScores,
-  DD5eSkillProficiencies 
+  DD5eSkillProficiencies
 } from '@/types/dnd5e'
+import { abilityScoreGenerator, type AbilityScores } from './abilityScoreGenerator'
 
 export type DNDEdition = '3.5' | '5e'
 
@@ -382,28 +383,14 @@ class DD35Converter implements DDConverter {
     }
   }
 
-  calculateAbilityModifiers(character: Character): any {
-    // Default ability scores based on race and background
-    const baseScores = {
-      strength: 13,
-      dexterity: 13,
-      constitution: 13,
-      intelligence: 13,
-      wisdom: 13,
-      charisma: 13
-    }
+  calculateAbilityModifiers(character: Character): AbilityScores {
+    // Generate intelligent ability scores based on character background
+    const baseScores = abilityScoreGenerator.generateScores(character, 'intelligent')
 
     // Apply racial modifiers
-    const racialMods = this.getRacialModifiers(character.race.name)
-    
-    return {
-      strength: baseScores.strength + racialMods.strength,
-      dexterity: baseScores.dexterity + racialMods.dexterity,
-      constitution: baseScores.constitution + racialMods.constitution,
-      intelligence: baseScores.intelligence + racialMods.intelligence,
-      wisdom: baseScores.wisdom + racialMods.wisdom,
-      charisma: baseScores.charisma + racialMods.charisma
-    }
+    const finalScores = abilityScoreGenerator.applyRacialModifiers(baseScores, character.race.name)
+
+    return finalScores
   }
 
   mapSkills(character: Character): any[] {
@@ -513,16 +500,6 @@ class DD35Converter implements DDConverter {
   }
 
   // Helper methods
-  private getRacialModifiers(race: string): any {
-    const modifiers: { [key: string]: any } = {
-      'Human': { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 },
-      'Elf': { strength: 0, dexterity: 2, constitution: -2, intelligence: 0, wisdom: 0, charisma: 0 },
-      'Dwarf': { strength: 0, dexterity: 0, constitution: 2, intelligence: 0, wisdom: 0, charisma: -2 },
-      'Halfling': { strength: -2, dexterity: 2, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 }
-    }
-    return modifiers[race] || modifiers['Human']
-  }
-
   private mapSkillName(pancastingSkill: string): string {
     // Map PanCasting skills to D&D 3.5 skills
     const mappings: { [key: string]: string } = {
@@ -971,19 +948,12 @@ class DD5eConverter implements DD5eConverter {
 
   // Helper methods for 5e converter
   private calculateAbilityScores(character: Character): DD5eAbilityScores {
-    // Standard array with racial bonuses
-    const baseScores = {
-      strength: 13,
-      dexterity: 14,
-      constitution: 13,
-      intelligence: 12,
-      wisdom: 10,
-      charisma: 15
-    }
-    
-    // Apply racial modifiers
-    const racialMods = this.getRacialModifiers(character.race.name)
-    
+    // Generate intelligent ability scores based on character background
+    const baseScores = abilityScoreGenerator.generateScores(character, 'standard-array')
+
+    // Apply racial modifiers (5e uses different modifiers than 3.5)
+    const racialMods = this.getRacialModifiers5e(character.race.name)
+
     return {
       strength: baseScores.strength + racialMods.strength,
       dexterity: baseScores.dexterity + racialMods.dexterity,
@@ -994,12 +964,15 @@ class DD5eConverter implements DD5eConverter {
     }
   }
 
-  private getRacialModifiers(race: string): DD5eAbilityScores {
+  private getRacialModifiers5e(race: string): DD5eAbilityScores {
     const modifiers: { [key: string]: DD5eAbilityScores } = {
       'Human': { strength: 1, dexterity: 1, constitution: 1, intelligence: 1, wisdom: 1, charisma: 1 },
       'Elf': { strength: 0, dexterity: 2, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 },
       'Dwarf': { strength: 0, dexterity: 0, constitution: 2, intelligence: 0, wisdom: 0, charisma: 0 },
-      'Halfling': { strength: 0, dexterity: 2, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 }
+      'Halfling': { strength: 0, dexterity: 2, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 },
+      'Half-Orc': { strength: 2, dexterity: 0, constitution: 1, intelligence: 0, wisdom: 0, charisma: 0 },
+      'Gnome': { strength: 0, dexterity: 0, constitution: 0, intelligence: 2, wisdom: 0, charisma: 0 },
+      'Half-Elf': { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 2 }
     }
     return modifiers[race] || modifiers['Human']
   }
