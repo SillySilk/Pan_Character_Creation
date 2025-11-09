@@ -1,9 +1,10 @@
 // Character List Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Character } from '../../types/character'
 import { useCharacterStore } from '../../stores/characterStore'
 import { CharacterCard } from './CharacterCard'
+import { hasTraits } from '../../utils/personalityTraitsHelpers'
 
 interface CharacterListProps {
   onCharacterSelect?: (character: Character) => void
@@ -46,10 +47,10 @@ export function CharacterList({
       const updatedCharacters = characters.filter(c => c.id !== character.id)
       setCharacters(updatedCharacters)
       localStorage.setItem('pancasting-characters', JSON.stringify(updatedCharacters))
-      
+
       // If we're deleting the currently selected character, clear it
       if (currentCharacter?.id === character.id) {
-        deleteCharacter()
+        deleteCharacter(character.id)
       }
     } catch (error) {
       console.error('Failed to delete character:', error)
@@ -71,7 +72,7 @@ export function CharacterList({
     if (character.youthEvents && character.youthEvents.length > 0) completed++
     if (character.occupations && character.occupations.length > 0) completed++
     if (character.adulthoodEvents && character.adulthoodEvents.length > 0) completed++
-    if (character.personalityTraits && character.personalityTraits.length > 0) completed++
+    if (hasTraits(character.personalityTraits)) completed++
     if (character.relationships && character.relationships.length > 0) completed++
     if (character.specialItems && character.specialItems.length > 0) completed++
     if (character.attributes && Object.keys(character.attributes).length > 0) completed++

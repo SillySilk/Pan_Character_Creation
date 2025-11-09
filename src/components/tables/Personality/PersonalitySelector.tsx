@@ -1,9 +1,10 @@
 // Personality & Values Selection Component - Simplified to follow Youth pattern
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { PersonalityTable } from './PersonalityTable'
+import { getAllTraits } from '../../../utils/personalityTraitsHelpers'
 
 interface PersonalitySelectorProps {
   onComplete?: () => void
@@ -12,33 +13,39 @@ interface PersonalitySelectorProps {
 export function PersonalitySelector({ onComplete }: PersonalitySelectorProps) {
   const [selectedCoreValues, setSelectedCoreValues] = useState<any>(null)
   const [selectedPersonalityTraits, setSelectedPersonalityTraits] = useState<any>(null)
-  const [showContinueButton, setShowContinueButton] = useState(false)
+  const [_showContinueButton, setShowContinueButton] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
   const { nextStep } = useGenerationStore()
 
   // Simplified: just two tables
-  const tables = [
-    { id: '501', name: 'Core Values', category: 'values' },
-    { id: '502', name: 'Personality Traits', category: 'traits' }
-  ]
+  // Tables configuration (kept for reference)
+  // const tables = [
+  //   { id: '501', name: 'Core Values', category: 'values' },
+  //   { id: '502', name: 'Personality Traits', category: 'traits' }
+  // ]
 
   // Check if character already has personality values (state restoration)
   useEffect(() => {
-    console.log('🟡 PersonalitySelector: Character check:', { 
-      values: character.values,
-      personalityTraits: character.personalityTraits
+    if (!character) return
+
+    console.log('🟡 PersonalitySelector: Character check:', {
+      values: character?.values,
+      personalityTraits: character?.personalityTraits
     })
-    
-    if (character.values) {
+
+    if (character?.values) {
       console.log('🟡 PersonalitySelector: Setting selected core values:', character.values)
       setSelectedCoreValues({ result: character.values.mostValuedConcept || 'Core Values Selected', ...character.values })
     }
-    
-    if (character.personalityTraits && character.personalityTraits.length > 0) {
-      const trait = character.personalityTraits[0]
-      console.log('🟡 PersonalitySelector: Setting selected personality traits:', trait)
-      setSelectedPersonalityTraits({ result: trait.name || trait.result, ...trait })
+
+    if (character?.personalityTraits) {
+      const allTraits = getAllTraits(character.personalityTraits)
+      if (allTraits.length > 0) {
+        const trait = allTraits[0]
+        console.log('🟡 PersonalitySelector: Setting selected personality traits:', trait)
+        setSelectedPersonalityTraits({ result: trait.name, ...trait })
+      }
     }
   }, [character])
 

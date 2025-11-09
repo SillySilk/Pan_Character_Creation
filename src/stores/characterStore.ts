@@ -30,7 +30,6 @@ import type { DDStats, SkillBonuses, BackgroundFeature, Item } from '@/types/dnd
 import type { Event as CharacterEvent } from '@/types/character'
 import { DEFAULTS } from '@/utils/constants'
 import { abilityScoreGenerator } from '@/services/abilityScoreGenerator'
-import { dndIntegrationService } from '@/services/dndIntegrationService'
 
 /**
  * Character store interface
@@ -50,6 +49,7 @@ interface CharacterStore {
   resetCharacter: () => void
   cloneCharacter: () => Character | null
   updateCharacter: (updates: Partial<Character>) => void
+  deleteCharacter: (characterId: string) => void
   
   // Basic character updates
   updateCharacterName: (name: string) => void
@@ -159,7 +159,7 @@ function createEmptyCharacter(name: string = DEFAULTS.characterName): Character 
     // Heritage & Birth (100s) - Initialize with empty values
     race: {
       name: '',  // Empty so heritage tables will show
-      type: '',
+      type: 'Human' as const,  // Default to Human until race selection
       events: [],
       modifiers: {}
     },
@@ -308,11 +308,23 @@ export const useCharacterStore = create<CharacterStore>()(
     updateCharacter: (updates) => {
       const { character } = get()
       if (!character) return
-      
-      set({ 
+
+      set({
         character: { ...character, ...updates, lastModified: new Date() },
-        hasUnsavedChanges: true 
+        hasUnsavedChanges: true
       })
+    },
+
+    deleteCharacter: (characterId) => {
+      try {
+        localStorage.removeItem(characterId)
+        const { character } = get()
+        if (character?.id === characterId) {
+          set({ character: null, hasUnsavedChanges: false })
+        }
+      } catch (error) {
+        set({ error: 'Failed to delete character' })
+      }
     },
 
     // Basic character updates

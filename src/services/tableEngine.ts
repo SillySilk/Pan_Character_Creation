@@ -1,14 +1,13 @@
 // Core table processing engine for PanCasting
 
-import type { 
-  Table, 
-  TableEntry, 
-  TableProcessingOptions, 
+import type {
+  Table,
+  TableEntry,
+  TableProcessingOptions,
   TableProcessingResult,
   DiceType
 } from '../types/tables'
 import type { Character } from '../types/character'
-import { DiceUtils } from '../utils/dice'
 
 export interface TableEngineConfig {
   validateTables: boolean
@@ -184,7 +183,7 @@ export class TableEngine {
       let rerolled = false
       
       if (options.manualSelection !== undefined) {
-        naturalRoll = options.manualSelection
+        naturalRoll = typeof options.manualSelection === 'number' ? options.manualSelection : parseInt(options.manualSelection) || 0
         rollResult = naturalRoll + modifiers
         this.log(`Manual selection: ${naturalRoll}`)
       } else {
@@ -259,8 +258,8 @@ export class TableEngine {
         success: true,
         requiresChoice: entry.choices && entry.choices.length > 0,
         requiresGoto: !!entry.goto,
-        specialRulesApplied: [],
-        crossReferencesApplied,
+        specialRulesApplied: false,
+        crossReferencesApplied: crossReferencesApplied.length > 0,
         rerolled,
         manualSelection: options.manualSelection !== undefined
       }
@@ -293,7 +292,7 @@ export class TableEngine {
     }
     
     // For Youth tables, also apply social status modifier per Central Casting rules
-    if (table.category === 'youth' || table.category === 'Youth') {
+    if (table.category === 'youth') {
       const solModValue = characterModifiers['solMod'] || 0
       if (solModValue !== 0 && table.modifier !== 'solMod') {
         totalModifiers += solModValue
@@ -313,7 +312,7 @@ export class TableEngine {
   /**
    * Roll dice with modifiers
    */
-  private rollDice(diceType: DiceType, modifiers: number): number {
+  private rollDice(diceType: DiceType, _modifiers: number): number {
     // Simple dice rolling using Math.random for testability
     const diceMatch = diceType.match(/(\d*)d(\d+)/)
     if (!diceMatch) {
@@ -594,13 +593,10 @@ export class TableEngine {
       character.race = {
         name: effect.value.name || effect.value,
         type: effect.value.type || effect.value.name || effect.value,
-        description: effect.value.description || '',
-        abilities: effect.value.abilities || [],
-        languages: effect.value.languages || [],
-        size: effect.value.size || 'Medium',
-        speed: effect.value.speed || 30,
         events: character.race?.events || [],
-        modifiers: character.race?.modifiers || {}
+        modifiers: character.race?.modifiers || {},
+        restrictions: effect.value.restrictions || [],
+        specialAbilities: effect.value.specialAbilities || []
       }
     }
 
@@ -699,15 +695,17 @@ export class TableEngine {
       }
       
       // Create the event object with proper period information
-      const eventObj = {
+      const eventObj: any = {
+        id: `youth_event_${Date.now()}_${Math.random()}`,
         name: effect.value.name,
-        description: effect.value.description,
+        description: effect.value.description || '',
+        category: 'Youth' as const,
+        period: period,
         age: effect.value.age,
         significance: effect.value.significance || 'Minor',
-        period: period,
         result: effect.value.name  // For compatibility with character sheet
       }
-      
+
       character.youthEvents.push(eventObj)
       this.log(`Added youth event: ${eventObj.name} (${eventObj.period})`)
     }
@@ -923,7 +921,7 @@ export class TableEngine {
     return {
       tableId: table.id,
       tableName: table.name,
-      rollResult: undefined,
+      rollResult: 0,
       naturalRoll: 0,
       modifiersApplied: 0,
       selectedEntry: entry,

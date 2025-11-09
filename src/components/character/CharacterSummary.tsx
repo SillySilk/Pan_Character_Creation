@@ -1,8 +1,9 @@
 // Enhanced Character Summary Component for PanCasting Generation Workflow
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Character } from '../../types/character'
 import { useCharacterStore } from '../../stores/characterStore'
+import { getAllTraits, getTraitCount, getTraitType } from '../../utils/personalityTraitsHelpers'
 
 interface CharacterSummaryProps {
   character?: Character
@@ -78,7 +79,7 @@ export function CharacterSummary({
       skills: character.skills ? Object.keys(character.skills).length : 0,
       hobbies: character.hobbies?.length || 0,
       relationships: (character.npcs?.length || 0) + (character.companions?.length || 0) + (character.rivals?.length || 0) + (character.relationships?.length || 0),
-      traits: character.personalityTraits?.length || 0
+      traits: character.personalityTraits ? getTraitCount(character.personalityTraits) : 0
     }
   }
 
@@ -387,19 +388,19 @@ export function CharacterSummary({
       )}
 
       {/* Personality Traits */}
-      {character.personalityTraits && character.personalityTraits.length > 0 && (
+      {character.personalityTraits && getTraitCount(character.personalityTraits) > 0 && (
         <div className="p-4 bg-indigo-50 border-b border-amber-200">
           <h3 className="font-semibold text-amber-800 mb-3">Personality</h3>
           <div className="flex flex-wrap gap-2">
-            {character.personalityTraits.slice(0, showFullDetails ? undefined : 6).map((trait, index) => (
+            {getAllTraits(character.personalityTraits).slice(0, showFullDetails ? undefined : 6).map((trait, index) => (
               <div key={index} className="flex items-center gap-1 px-2 py-1 bg-white rounded border">
-                <span>{getPersonalityTraitIcon(trait.type)}</span>
+                <span>{getPersonalityTraitIcon(getTraitType(trait))}</span>
                 <span className="text-sm font-medium">{trait.name}</span>
               </div>
             ))}
-            {!showFullDetails && character.personalityTraits.length > 6 && (
+            {!showFullDetails && getTraitCount(character.personalityTraits) > 6 && (
               <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
-                +{character.personalityTraits.length - 6} more
+                +{getTraitCount(character.personalityTraits) - 6} more
               </div>
             )}
           </div>

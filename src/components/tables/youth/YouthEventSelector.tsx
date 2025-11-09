@@ -1,9 +1,10 @@
 // Youth Event Selection Component - Simplified to follow Heritage pattern
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { YouthTable } from './YouthTable'
+import { getAllTraits, getTraitCount, getTraitType } from '../../../utils/personalityTraitsHelpers'
 
 interface YouthEventSelectorProps {
   onComplete?: () => void
@@ -12,30 +13,32 @@ interface YouthEventSelectorProps {
 export function YouthEventSelector({ onComplete }: YouthEventSelectorProps) {
   const [selectedChildhoodEvent, setSelectedChildhoodEvent] = useState<any>(null)
   const [selectedAdolescenceEvent, setSelectedAdolescenceEvent] = useState<any>(null)
-  const [showContinueButton, setShowContinueButton] = useState(false)
+  const [_showContinueButton, setShowContinueButton] = useState(false)
   
   const { character } = useCharacterStore()
   const { nextStep } = useGenerationStore()
 
   // Check if character already has youth events (state restoration)
   useEffect(() => {
-    console.log('🟡 YouthEventSelector: Character check:', { 
-      youthEvents: character.youthEvents
+    if (!character) return
+
+    console.log('🟡 YouthEventSelector: Character check:', {
+      youthEvents: character?.youthEvents
     })
-    
-    if (character.youthEvents && Array.isArray(character.youthEvents)) {
-      const childhood = character.youthEvents.find(event => 
-        event.category === 'childhood' || (event.ageRange && event.ageRange.max <= 12)
+
+    if (character?.youthEvents && Array.isArray(character.youthEvents)) {
+      const childhood = character.youthEvents.find(event =>
+        event.period === 'Childhood'
       )
-      const adolescence = character.youthEvents.find(event => 
-        event.category === 'adolescence' || (event.ageRange && event.ageRange.min >= 13)
+      const adolescence = character.youthEvents.find(event =>
+        event.period === 'Adolescence'
       )
-      
+
       if (childhood) {
         console.log('🟡 YouthEventSelector: Setting selected childhood event:', childhood)
         setSelectedChildhoodEvent({ result: childhood.name || childhood.result, ...childhood })
       }
-      
+
       if (adolescence) {
         console.log('🟡 YouthEventSelector: Setting selected adolescence event:', adolescence)
         setSelectedAdolescenceEvent({ result: adolescence.name || adolescence.result, ...adolescence })
@@ -282,24 +285,27 @@ export function YouthEventSelector({ onComplete }: YouthEventSelectorProps) {
             )}
             
             {/* Personality Traits */}
-            {character && character.personalityTraits && character.personalityTraits.length > 0 && (
+            {character && character.personalityTraits && getTraitCount(character.personalityTraits) > 0 && (
               <div className="mb-4">
                 <h5 className="font-medium text-gray-700 mb-2">Personality Traits</h5>
                 <div className="flex flex-wrap gap-2">
-                  {character.personalityTraits.slice(0, 6).map((trait, index) => (
+                  {getAllTraits(character.personalityTraits).slice(0, 6).map((trait, index) => {
+                    const traitType = getTraitType(trait)
+                    return (
                     <div key={index} className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">
                       <span>
-                        {trait.type === 'Lightside' ? '😇' : 
-                         trait.type === 'Darkside' ? '😈' : 
-                         trait.type === 'Neutral' ? '😐' : 
-                         trait.type === 'Exotic' ? '✨' : '❓'}
+                        {traitType === 'Lightside' ? '😇' :
+                         traitType === 'Darkside' ? '😈' :
+                         traitType === 'Neutral' ? '😐' :
+                         '✨'}
                       </span>
                       <span className="font-medium">{trait.name}</span>
                     </div>
-                  ))}
-                  {character.personalityTraits.length > 6 && (
+                  )
+                  })}
+                  {getTraitCount(character.personalityTraits) > 6 && (
                     <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
-                      +{character.personalityTraits.length - 6} more
+                      +{getTraitCount(character.personalityTraits) - 6} more
                     </div>
                   )}
                 </div>

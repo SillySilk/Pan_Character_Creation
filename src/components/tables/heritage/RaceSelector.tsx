@@ -1,10 +1,10 @@
 // Race Selection Component for Heritage Tables
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
-import { TableService } from '../../../services/tableService'
 import { HeritageTable } from './HeritageTable'
+import { getAllTraits, getTraitCount, getTraitType } from '../../../utils/personalityTraitsHelpers'
 
 interface RaceSelectorProps {
   onRaceSelected?: (race: any) => void
@@ -16,36 +16,38 @@ export function RaceSelector({ onRaceSelected, onComplete }: RaceSelectorProps) 
   const [selectedCulture, setSelectedCulture] = useState<any>(null)
   const [selectedSocialStatus, setSelectedSocialStatus] = useState<any>(null)
   const [selectedBirthCircumstances, setSelectedBirthCircumstances] = useState<any>(null)
-  const [showContinueButton, setShowContinueButton] = useState(false)
+  const [_showContinueButton, setShowContinueButton] = useState(false)
   
   const { character } = useCharacterStore()
   const { nextStep } = useGenerationStore()
 
   // Check if character already has heritage selections made
   useEffect(() => {
-    console.log('🟡 RaceSelector: Character check:', { 
-      race: character.race, 
-      culture: character.culture, 
-      socialStatus: character.socialStatus, 
-      birthCircumstances: character.birthCircumstances 
+    if (!character) return
+
+    console.log('🟡 RaceSelector: Character check:', {
+      race: character?.race,
+      culture: character?.culture,
+      socialStatus: character?.socialStatus,
+      birthCircumstances: character?.birthCircumstances
     })
-    
-    if (character.race && character.race.name && character.race.name.trim()) {
+
+    if (character?.race && character.race.name && character.race.name.trim()) {
       console.log('🟡 RaceSelector: Setting selected race:', character.race)
       setSelectedRace({ result: character.race.name, ...character.race })
     }
-    
-    if (character.culture && character.culture.name && character.culture.name !== 'Unknown') {
+
+    if (character?.culture && character.culture.name && character.culture.name !== 'Unknown') {
       console.log('🟡 RaceSelector: Setting selected culture:', character.culture)
       setSelectedCulture({ result: character.culture.name, ...character.culture })
     }
-    
-    if (character.socialStatus && character.socialStatus.level && character.socialStatus.level !== 'Comfortable') {
+
+    if (character?.socialStatus && character.socialStatus.level && character.socialStatus.level !== 'Comfortable') {
       console.log('🟡 RaceSelector: Setting selected social status:', character.socialStatus)
       setSelectedSocialStatus({ result: character.socialStatus.level, ...character.socialStatus })
     }
-    
-    if (character.birthCircumstances && character.birthCircumstances.legitimacy && character.birthCircumstances.legitimacy !== 'Legitimate') {
+
+    if (character?.birthCircumstances && character.birthCircumstances.legitimacy && character.birthCircumstances.legitimacy !== 'Legitimate') {
       console.log('🟡 RaceSelector: Setting selected birth circumstances:', character.birthCircumstances)
       setSelectedBirthCircumstances({ result: character.birthCircumstances.legitimacy, ...character.birthCircumstances })
     }
@@ -356,24 +358,27 @@ export function RaceSelector({ onRaceSelected, onComplete }: RaceSelectorProps) 
             )}
             
             {/* Personality Traits */}
-            {character && character.personalityTraits && character.personalityTraits.length > 0 && (
+            {character && character.personalityTraits && getTraitCount(character.personalityTraits) > 0 && (
               <div>
                 <h5 className="font-medium text-gray-700 mb-2">Personality Traits</h5>
                 <div className="flex flex-wrap gap-2">
-                  {character.personalityTraits.slice(0, 4).map((trait, index) => (
+                  {getAllTraits(character.personalityTraits).slice(0, 4).map((trait, index) => {
+                    const traitType = getTraitType(trait)
+                    return (
                     <div key={index} className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">
                       <span>
-                        {trait.type === 'Lightside' ? '😇' : 
-                         trait.type === 'Darkside' ? '😈' : 
-                         trait.type === 'Neutral' ? '😐' : 
-                         trait.type === 'Exotic' ? '✨' : '❓'}
+                        {traitType === 'Lightside' ? '😇' :
+                         traitType === 'Darkside' ? '😈' :
+                         traitType === 'Neutral' ? '😐' :
+                         '✨'}
                       </span>
                       <span className="font-medium">{trait.name}</span>
                     </div>
-                  ))}
-                  {character.personalityTraits.length > 4 && (
+                  )
+                  })}
+                  {getTraitCount(character.personalityTraits) > 4 && (
                     <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
-                      +{character.personalityTraits.length - 4} more
+                      +{getTraitCount(character.personalityTraits) - 4} more
                     </div>
                   )}
                 </div>

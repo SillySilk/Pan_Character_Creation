@@ -1,9 +1,10 @@
 // Detailed Character Sheet Component for PanCasting
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Character } from '../../types/character'
 import { useCharacterStore } from '../../stores/characterStore'
 import { exportService, type ExportFormat } from '../../services/exportService'
+import { getAllTraits, hasTraits, getTraitType } from '../../utils/personalityTraitsHelpers'
 
 interface CharacterSheetProps {
   character?: Character
@@ -14,11 +15,11 @@ interface CharacterSheetProps {
 
 export function CharacterSheet({
   character: propCharacter,
-  editable = false,
-  onSave,
+  editable: _editable = false,
+  onSave: _onSave,
   className = ''
 }: CharacterSheetProps) {
-  const { character: storeCharacter, updateCharacter } = useCharacterStore()
+  const { character: storeCharacter } = useCharacterStore()
   const character = propCharacter || storeCharacter
 
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'history' | 'export'>('overview')
@@ -204,16 +205,16 @@ export function CharacterSheet({
             )}
 
             {/* Personality Traits */}
-            {character.personalityTraits && character.personalityTraits.length > 0 && (
+            {hasTraits(character.personalityTraits) && (
               <div className="bg-indigo-50 rounded-lg p-4">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">Personality Traits</h2>
                 <div className="grid md:grid-cols-2 gap-3">
-                  {character.personalityTraits.map((trait, index) => (
+                  {getAllTraits(character.personalityTraits).map((trait, index) => (
                     <div key={index} className="bg-white rounded-lg p-3 border flex items-center gap-3">
-                      <span className="text-2xl">{getPersonalityTraitIcon(trait.type)}</span>
+                      <span className="text-2xl">{getPersonalityTraitIcon(getTraitType(trait))}</span>
                       <div>
                         <div className="font-medium text-gray-800">{trait.name}</div>
-                        <div className="text-sm text-gray-600">{trait.type}</div>
+                        <div className="text-sm text-gray-600">{getTraitType(trait)}</div>
                         {trait.description && (
                           <div className="text-xs text-gray-500 mt-1">{trait.description}</div>
                         )}

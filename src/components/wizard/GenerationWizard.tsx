@@ -1,8 +1,9 @@
 // Generation Wizard Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { useGenerationStore } from '../../stores/generationStore'
+import { getTraitCount } from '../../utils/personalityTraitsHelpers'
 import { RaceSelector } from '../tables/heritage'
 import { YouthEventSelector } from '../tables/youth'
 import { OccupationSelector } from '../tables/Occupations'
@@ -325,7 +326,6 @@ export function GenerationWizard({ onComplete, onCancel, className = '' }: Gener
               
               {currentStep === 'youth' && (
                 <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
-                  {console.log('🟡 Rendering YouthEventSelector, currentStep:', currentStep)}
                   <YouthEventSelector onComplete={handleStepComplete} />
                 </div>
               )}
@@ -430,27 +430,27 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
   )
 }
 
-// Placeholder Step Component for incomplete sections
-function PlaceholderStep({ step, onNext }: { step: StepConfig; onNext: () => void }) {
-  return (
-    <div className="bg-white rounded-lg border-2 border-gray-300 p-8 text-center">
-      <div className="text-6xl mb-4">{step.icon}</div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">{step.title}</h2>
-      <p className="text-gray-600 mb-6">{step.description}</p>
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-        <p className="text-yellow-800 text-sm">
-          This section is not yet implemented. Click Continue to proceed to the next step.
-        </p>
-      </div>
-      <button
-        onClick={onNext}
-        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-      >
-        Continue
-      </button>
-    </div>
-  )
-}
+// Placeholder Step Component for incomplete sections (currently unused)
+// function PlaceholderStep({ step, onNext }: { step: StepConfig; onNext: () => void }) {
+//   return (
+//     <div className="bg-white rounded-lg border-2 border-gray-300 p-8 text-center">
+//       <div className="text-6xl mb-4">{step.icon}</div>
+//       <h2 className="text-2xl font-bold text-gray-800 mb-4">{step.title}</h2>
+//       <p className="text-gray-600 mb-6">{step.description}</p>
+//       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+//         <p className="text-yellow-800 text-sm">
+//           This section is not yet implemented. Click Continue to proceed to the next step.
+//         </p>
+//       </div>
+//       <button
+//         onClick={onNext}
+//         className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+//       >
+//         Continue
+//       </button>
+//     </div>
+//   )
+// }
 
 // Finalize Step Component
 function FinalizeStep({ onComplete }: { onComplete: () => void }) {
@@ -476,7 +476,7 @@ function FinalizeStep({ onComplete }: { onComplete: () => void }) {
             <span className="font-medium">Race:</span> {character?.race?.name || 'Unknown'}
           </div>
           <div>
-            <span className="font-medium">Personality Traits:</span> {character?.personalityTraits?.length || 0}
+            <span className="font-medium">Personality Traits:</span> {character?.personalityTraits ? getTraitCount(character.personalityTraits) : 0}
           </div>
           <div>
             <span className="font-medium">Skills:</span> {character?.skills ? Object.keys(character.skills).length : 0}

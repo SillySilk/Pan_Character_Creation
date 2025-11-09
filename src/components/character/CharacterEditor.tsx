@@ -79,18 +79,18 @@ export function CharacterEditor({
     setHasChanges(true)
   }
 
-  const getPersonalityTraitsArray = (traits: PersonalityTraits): (PersonalityTrait & { category: string })[] => {
-    const result: (PersonalityTrait & { category: string })[] = []
-    
+  const getPersonalityTraitsArray = (traits: PersonalityTraits): any[] => {
+    const result: any[] = []
+
     traits.lightside?.forEach(trait => result.push({ ...trait, category: 'lightside' }))
     traits.neutral?.forEach(trait => result.push({ ...trait, category: 'neutral' }))
     traits.darkside?.forEach(trait => result.push({ ...trait, category: 'darkside' }))
     traits.exotic?.forEach(trait => result.push({ ...trait, category: 'exotic' }))
-    
+
     return result
   }
 
-  const updatePersonalityTraits = (newTraits: (PersonalityTrait & { category: string })[]) => {
+  const updatePersonalityTraits = (newTraits: any[]) => {
     if (!editedCharacter) return
     
     const updated: PersonalityTraits = {
@@ -181,9 +181,9 @@ export function CharacterEditor({
 
   const removeSkill = (skillName: string) => {
     if (!editedCharacter || !editedCharacter.skills) return
-    
+
     const updated = { ...editedCharacter }
-    delete updated.skills[skillName]
+    updated.skills = updated.skills.filter(skill => skill.name !== skillName)
     setEditedCharacter(updated)
     setHasChanges(true)
   }

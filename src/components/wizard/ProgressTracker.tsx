@@ -1,7 +1,7 @@
 // Progress Tracking Component for PanCasting Generation Wizard
 
-import React from 'react'
 import { Character } from '../../types/character'
+import { getTraitCount } from '../../utils/personalityTraitsHelpers'
 
 interface ProgressTrackerProps {
   character?: Character
@@ -20,7 +20,7 @@ interface StepRequirement {
 
 export function ProgressTracker({
   character,
-  currentStep,
+  currentStep: _currentStep,
   completedSteps,
   totalSteps,
   className = ''
@@ -55,7 +55,7 @@ export function ProgressTracker({
     {
       id: 'personality',
       name: 'Personality',
-      check: (char) => !!(char.personalityTraits && char.personalityTraits.length >= 3),
+      check: (char) => !!(char.personalityTraits && getTraitCount(char.personalityTraits) >= 3),
       description: 'Core personality traits defined'
     },
     {
@@ -201,7 +201,7 @@ export function ProgressTracker({
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="text-center">
               <div className="font-bold text-blue-600">
-                {character.personalityTraits?.length || 0}
+                {character.personalityTraits ? getTraitCount(character.personalityTraits) : 0}
               </div>
               <div className="text-gray-600 text-xs">Traits</div>
             </div>

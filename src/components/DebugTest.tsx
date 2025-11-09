@@ -1,7 +1,7 @@
 // Debug test component
-import React from 'react'
 import { tableEngine } from '../services/tableEngine'
 import { childhoodEventsTable } from '../data/tables/youth'
+import type { Character } from '../types/character'
 
 export function DebugTest() {
   const testTableEngine = () => {
@@ -13,11 +13,11 @@ export function DebugTest() {
       console.log('✅ Table registered')
       
       // Test character
-      const testCharacter = {
-        race: { name: 'Human' },
-        activeModifiers: { cuMod: 1 }
+      const testCharacter: Partial<Character> = {
+        race: { name: 'Human' } as any,
+        activeModifiers: { cuMod: 1 } as any
       }
-      
+
       // Process table
       const result = tableEngine.processTable(childhoodEventsTable, testCharacter)
       console.log('✅ Table processed:', result)

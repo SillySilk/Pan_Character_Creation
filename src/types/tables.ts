@@ -11,6 +11,16 @@ export interface Table {
   subtables?: Table[]
   conditions?: TableCondition[]
   description?: string
+  relationshipType?: string
+  specialRules?: any[]
+  crossReferences?: any[]
+  choices?: any[]
+  lifeStage?: string
+  socialComplexity?: string
+  culturalVariations?: any[]
+  skillBonusCalculation?: string
+  trainingTime?: string
+  cultureRestrictions?: string[]
 }
 
 export interface TableEntry {
@@ -19,16 +29,17 @@ export interface TableEntry {
   result: string
   description?: string
   effects?: Effect[]
-  goto?: string
+  goto?: string | { tableId: string; [key: string]: any }
   personalityTrait?: PersonalityTraitType
   conditions?: Condition[]
   subtableReference?: string
   modifiers?: Partial<Modifiers>
   specialInstructions?: string
+  choices?: any[]
 }
 
 export interface Effect {
-  type: 'modifier' | 'trait' | 'skill' | 'item' | 'relationship' | 'occupation' | 'event' | 'property'
+  type: 'modifier' | 'trait' | 'skill' | 'item' | 'relationship' | 'occupation' | 'event' | 'property' | 'race' | 'attribute'
   target: string
   value: any
   duration?: 'permanent' | 'temporary'
@@ -142,9 +153,11 @@ export interface YouthTable extends Table {
 // Occupation Tables (300s)
 export interface OccupationTable extends Table {
   category: 'occupations'
-  occupationType: 'craft' | 'professional' | 'military' | 'religious' | 'criminal' | 'special'
+  occupationType: 'craft' | 'professional' | 'military' | 'religious' | 'criminal' | 'special' | 'apprenticeship' | 'civilized' | 'hobby' | 'academic'
   cultureRestrictions?: string[]
   skillsGranted?: string[]
+  skillBonusCalculation?: string
+  trainingTime?: string
 }
 
 // Adulthood Event Tables (400s)
@@ -164,8 +177,8 @@ export interface PersonalityTable extends Table {
 // Miscellaneous Event Tables (600s)
 export interface MiscellaneousTable extends Table {
   category: 'miscellaneous'
-  eventType: 'unusual' | 'tragedy' | 'wonderful' | 'specialized'
-  complexity: 'simple' | 'complex' | 'multi_stage'
+  eventType?: 'unusual' | 'tragedy' | 'wonderful' | 'specialized' | 'fortune' | 'encounter' | 'adventure'
+  complexity?: 'simple' | 'complex' | 'multi_stage'
 }
 
 // Contact Tables (700s)
@@ -178,7 +191,7 @@ export interface ContactTable extends Table {
 // Special Item Tables (800s)
 export interface SpecialTable extends Table {
   category: 'special'
-  itemType: 'gift' | 'legacy' | 'magical' | 'property'
+  itemType?: 'gift' | 'legacy' | 'magical' | 'property' | 'special' | 'equipment'
   valuationRequired?: boolean
 }
 
@@ -219,7 +232,7 @@ export interface TableLoader {
 
 // Table Processing Interfaces for Engine
 export interface TableProcessingOptions {
-  manualSelection?: number
+  manualSelection?: number | string  // Can be a roll value (number) or entry ID (string)
   skipGoto?: boolean
   inheritedModifiers?: number
   additionalModifiers?: Record<string, number>
@@ -242,4 +255,10 @@ export interface TableProcessingResult {
   success: boolean
   warnings?: string[]
   errors?: string[]
+  requiresChoice?: boolean
+  requiresGoto?: boolean
+  crossReferencesApplied?: boolean
+  specialRulesApplied?: boolean
+  rerolled?: boolean
+  manualSelection?: boolean
 }

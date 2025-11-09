@@ -1,11 +1,11 @@
 // Heritage Table Component for PanCasting
 
-import React, { useState, useEffect, useRef } from 'react'
-import { HeritageTable as HeritageTableType } from '../../../types/tables'
+import { useState, useEffect } from 'react'
+import { HeritageTable as HeritageTableType, Effect } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
-import { TableService } from '../../../services/tableService'
+import { tableService } from '../../../services/tableService'
 import type { DiceRoll } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
 
@@ -23,12 +23,10 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
   const [showFullTable, setShowFullTable] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
-  const { currentStep } = useGenerationStore()
+  const { currentStep: _currentStep } = useGenerationStore()
   
   // Use global singleton TableEngine and persistent TableService
   const tableEngine = getGlobalTableEngine()
-  const tableServiceRef = useRef(new TableService())
-  const tableService = tableServiceRef.current
 
   useEffect(() => {
     loadTable()
@@ -66,9 +64,9 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
       const roll = rollWithModifiers(table.diceType)
       setCurrentRoll(roll)
       console.log('🎲 HeritageTable: Rolled', roll.finalResult, 'on table', table.id)
-      
+
       // Process the table result with the actual roll
-      const result = await tableEngine.processTable(table.id, character, {
+      const result = await tableEngine.processTable(table.id, character || {}, {
         manualSelection: roll.finalResult
       })
       console.log('🔍 HeritageTable: Table processing result:', result)
@@ -128,7 +126,7 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
     
     // Process effects
     try {
-      const result = await tableEngine.processTable(table.id, character, entry.id)
+      const result = await tableEngine.processTable(table.id, character || {}, { manualSelection: entry.id })
       
       if (result.success && result.character) {
         updateCharacter(result.character)
@@ -238,7 +236,7 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
             <div className="space-y-2">
               <h5 className="font-semibold text-green-800">Effects:</h5>
               <ul className="list-disc list-inside space-y-1">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: Effect, index: number) => (
                   <li key={index} className="text-green-700 text-sm">
                     <span className="font-medium">{effect.type}:</span> {JSON.stringify(effect.value)}
                   </li>

@@ -1,8 +1,8 @@
 // Character Export Service
 // Handles exporting characters to various formats
 
-import { renderToStaticMarkup } from 'react-dom/server'
 import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import type { Character } from '@/types/character'
 import type { DDCharacterSheet } from '@/types/dnd'
 import { dndIntegrationService, type DNDEdition } from './dndIntegrationService'

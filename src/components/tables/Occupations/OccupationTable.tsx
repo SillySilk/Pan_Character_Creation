@@ -1,7 +1,7 @@
 // Occupation Table Component for PanCasting
 
-import React, { useState, useEffect, useRef } from 'react'
-import { OccupationTable as OccupationTableType } from '../../../types/tables'
+import { useState, useEffect } from 'react'
+import { OccupationTable as OccupationTableType, Effect } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
@@ -25,7 +25,7 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
   const [showSkillDetails, setShowSkillDetails] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
-  const { currentStep } = useGenerationStore()
+  const { currentStep: _currentStep } = useGenerationStore()
   
   // Use global singleton TableEngine and TableService
   const tableEngine = getGlobalTableEngine()
@@ -77,9 +77,9 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
       // Roll dice for this table
       const roll = rollWithModifiers(table.diceType)
       setCurrentRoll(roll)
-      
+
       // Process the table result with the actual roll
-      const result = await tableEngine.processTable(table.id, character, {
+      const result = await tableEngine.processTable(table.id, character || {}, {
         manualSelection: roll.finalResult
       })
       console.log('🔍 OccupationTable: Table processing result:', result)
@@ -139,7 +139,7 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
     
     // Process effects
     try {
-      const result = await tableEngine.processTable(table.id, character, {
+      const result = await tableEngine.processTable(table.id, character || {}, {
         manualSelection: entry.id
       })
       
@@ -308,7 +308,7 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
             <div className="space-y-2">
               <h5 className={`font-semibold ${colors.text}`}>Skills & Benefits:</h5>
               <div className="grid gap-2">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: Effect, index: number) => (
                   <div key={index} className="bg-white p-3 rounded border">
                     {effect.type === 'skill' && (
                       <div className="flex items-center justify-between">
@@ -449,16 +449,16 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
       )}
 
       {/* Culture Filtering */}
-      {table.culturalRestrictions && (
+      {table.cultureRestrictions && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h5 className="font-semibold text-yellow-800 mb-2">Cultural Considerations:</h5>
           <p className="text-yellow-700 text-sm">
-            Some occupations may not be available in all cultures. Consider your character's 
+            Some occupations may not be available in all cultures. Consider your character's
             cultural background when selecting an occupation.
           </p>
-          {table.culturalRestrictions.length > 0 && (
+          {table.cultureRestrictions.length > 0 && (
             <ul className="list-disc list-inside mt-2 text-yellow-700 text-sm">
-              {table.culturalRestrictions.map((restriction, index) => (
+              {table.cultureRestrictions.map((restriction: string, index: number) => (
                 <li key={index}>{restriction}</li>
               ))}
             </ul>

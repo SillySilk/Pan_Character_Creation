@@ -1,35 +1,37 @@
 // Contact/Relationship Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { TableService } from '../../../services/tableService'
-import { TableEngine } from '../../../services/tableEngine'
-import type { TableProcessingResult, ContactTable as ContactTableType } from '../../../types/tables'
+import { tableService } from '../../../services/tableService'
+import { getGlobalTableEngine } from '../../../services/globalTableEngine'
+import type { Table, Effect } from '../../../types/tables'
 import type { NPC, Companion, Rival, Relationship } from '../../../types/character'
 
 interface ContactTableProps {
   tableId: string
-  onComplete?: (result: TableProcessingResult) => void
+  onComplete?: (result: any) => void
 }
 
 export function ContactTable({ tableId, onComplete }: ContactTableProps) {
-  const [table, setTable] = useState<ContactTableType | null>(null)
+  const [table, setTable] = useState<Table | null>(null)
   const [isRolling, setIsRolling] = useState(false)
-  const [result, setResult] = useState<TableProcessingResult | null>(null)
+  const [result, setResult] = useState<any | null>(null)
   const [manualRoll, setManualRoll] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const { character, addNPC, addCompanion, addRival, addRelationship } = useCharacterStore()
+  const tableEngine = getGlobalTableEngine()
 
   // Load table data
   useEffect(() => {
     const loadTable = async () => {
       try {
-        const tableData = await TableService.getTable(tableId)
-        if (tableData && tableData.category === 'contacts') {
-          setTable(tableData as ContactTableType)
+        const tableData = await tableService.getTable(tableId)
+        if (tableData) {
+          setTable(tableData as Table)
+          tableEngine.registerTable(tableData)
         } else {
-          setError(`Table ${tableId} not found or not a contacts table`)
+          setError(`Table ${tableId} not found`)
         }
       } catch (err) {
         setError(`Failed to load table ${tableId}: ${err}`)
@@ -39,14 +41,14 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
     loadTable()
   }, [tableId])
 
-  const handleRoll = async (rollValue?: number) => {
+  const handleRoll = async (_rollValue?: number) => {
     if (!table || !character) return
 
     setIsRolling(true)
     setError(null)
 
     try {
-      const rollResult = await TableEngine.processTable(table, character, rollValue)
+      const rollResult = await tableEngine.processTable(table.id, character)
       setResult(rollResult)
 
       // Apply the result to character
@@ -61,13 +63,9 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
                 const companion: Companion = {
                   id: `comp_${Date.now()}`,
                   name: relationshipData.name || rollResult.entry.result,
+                  type: 'Companion',
                   description: rollResult.entry.description || '',
-                  type: relationshipData.type || 'Ally',
-                  loyalty: relationshipData.loyalty || 'Average',
-                  skills: relationshipData.skills || [],
-                  relationship: relationshipData.relationship || 'Friend',
-                  met: 'During character generation',
-                  currentStatus: 'Active'
+                  loyalty: relationshipData.loyalty || 'Average'
                 }
                 addCompanion(companion)
                 break
@@ -76,11 +74,9 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
                 const rival: Rival = {
                   id: `rival_${Date.now()}`,
                   name: relationshipData.name || rollResult.entry.result,
+                  type: 'Rival',
                   description: rollResult.entry.description || '',
-                  type: relationshipData.type || 'Personal',
-                  threat: relationshipData.threat || 'Medium',
-                  reason: relationshipData.reason || 'Unknown conflict',
-                  currentStatus: 'Active'
+                  conflictType: relationshipData.reason || 'Unknown conflict'
                 }
                 addRival(rival)
                 break
@@ -89,12 +85,8 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
                 const npc: NPC = {
                   id: `npc_${Date.now()}`,
                   name: relationshipData.name || rollResult.entry.result,
-                  description: rollResult.entry.description || '',
-                  role: relationshipData.role || 'Contact',
-                  location: relationshipData.location || 'Unknown',
-                  disposition: relationshipData.disposition || 'Neutral',
-                  importance: relationshipData.importance || 'Minor',
-                  secrets: relationshipData.secrets || []
+                  type: 'Other',
+                  description: rollResult.entry.description || ''
                 }
                 addNPC(npc)
                 break
@@ -102,12 +94,15 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
               case 'relationships':
                 const relationship: Relationship = {
                   id: `rel_${Date.now()}`,
-                  name: relationshipData.name || rollResult.entry.result,
-                  description: rollResult.entry.description || '',
+                  person: {
+                    id: `npc_${Date.now()}`,
+                    name: relationshipData.name || rollResult.entry.result,
+                    type: 'Contact',
+                    description: rollResult.entry.description || ''
+                  },
                   type: relationshipData.type || 'Professional',
-                  strength: relationshipData.strength || 'Weak',
-                  status: relationshipData.status || 'Current',
-                  history: relationshipData.history || 'Met during generation'
+                  name: relationshipData.name || rollResult.entry.result,
+                  result: rollResult.entry.result
                 }
                 addRelationship(relationship)
                 break
@@ -159,7 +154,8 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
       case 'companion': return '🤝'
       case 'rival': return '⚔️'
       case 'family': return '👨‍👩‍👧‍👦'
-      case 'professional': return '💼'
+      case 'contact': return '💼'
+      case 'patron': return '👑'
       default: return '👤'
     }
   }
@@ -169,7 +165,8 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
       case 'companion': return 'green'
       case 'rival': return 'red'
       case 'family': return 'blue'
-      case 'professional': return 'purple'
+      case 'contact': return 'purple'
+      case 'patron': return 'amber'
       default: return 'cyan'
     }
   }
@@ -255,14 +252,14 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
         <div className={`bg-${colorClass}-50 border-2 border-${colorClass}-500 rounded-lg p-4 animate-fade-in`}>
           <div className="text-center mb-4">
             <div className={`text-2xl font-bold text-${colorClass}-800 mb-2`}>
-              🎯 Rolled: {result.rollResult?.finalResult}
+              🎯 Result
             </div>
             <div className={`text-lg font-semibold text-${colorClass}-700`}>
               {result.entry?.result}
             </div>
             {result.entry?.description && (
               <div className={`text-${colorClass}-600 text-sm mt-2 max-w-md mx-auto`}>
-                {result.entry.description}
+                {result.entry?.description}
               </div>
             )}
           </div>
@@ -272,7 +269,7 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
             <div className={`border-t border-${colorClass}-300 pt-3 mt-3`}>
               <h4 className={`font-medium text-${colorClass}-800 mb-2`}>Relationship Details:</h4>
               <div className="space-y-2">
-                {result.entry.effects.map((effect, index) => {
+                {result.entry.effects.map((effect: Effect, index: number) => {
                   if (effect.type === 'relationship' && effect.value) {
                     const rel = effect.value
                     return (
@@ -326,7 +323,7 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-medium text-gray-800 mb-3">Sample Contacts (Roll {table.diceType}):</h4>
           <div className="grid grid-cols-1 gap-2 text-sm">
-            {table.entries.slice(0, 5).map((entry, index) => (
+            {table.entries.slice(0, 5).map((entry) => (
               <div key={entry.id} className="flex items-start justify-between py-2 border-b border-gray-200 last:border-b-0">
                 <span className="text-gray-600 font-mono text-xs">
                   {Array.isArray(entry.rollRange) ? 

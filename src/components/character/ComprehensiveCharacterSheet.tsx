@@ -1,32 +1,18 @@
 // Comprehensive Character Sheet - Shows all fields that will be generated
 // with progressive filling as generation proceeds
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
-import type { Character } from '../../types/character'
-import { DND35_SKILLS, calculateSkillModifier, type DnDSkill } from '../../data/dnd35Skills'
+import { DND35_SKILLS, calculateSkillModifier } from '../../data/dnd35Skills'
 
 interface ComprehensiveCharacterSheetProps {
   className?: string
   collapsible?: boolean
 }
 
-interface CharacterSheetField {
-  label: string
-  value: string | number
-  status: 'filled' | 'pending' | 'empty'
-  description?: string
-}
-
-interface CharacterSheetSection {
-  title: string
-  fields: CharacterSheetField[]
-  isScrollable?: boolean
-}
-
-export function ComprehensiveCharacterSheet({ 
-  className = '', 
-  collapsible = false 
+export function ComprehensiveCharacterSheet({
+  className = '',
+  collapsible = false
 }: ComprehensiveCharacterSheetProps) {
   const { character, updateCharacter } = useCharacterStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -226,20 +212,20 @@ export function ComprehensiveCharacterSheet({
     {
       title: '⚔️ Training & Background',
       fields: [
-        { 
-          label: 'Apprenticeship', 
-          value: character?.occupations?.find(occ => occ.type === 'apprenticeship')?.result || 'Upcoming',
-          status: getFieldStatus(character?.occupations?.find(occ => occ.type === 'apprenticeship'))
+        {
+          label: 'Apprenticeship',
+          value: character?.apprenticeships?.[0]?.name || 'Upcoming',
+          status: getFieldStatus(character?.apprenticeships?.[0])
         },
-        { 
-          label: 'Profession', 
-          value: character?.occupations?.find(occ => occ.type === 'civilized')?.result || 'Upcoming',
-          status: getFieldStatus(character?.occupations?.find(occ => occ.type === 'civilized'))
+        {
+          label: 'Profession',
+          value: character?.occupations?.[0]?.name || 'Upcoming',
+          status: getFieldStatus(character?.occupations?.[0])
         },
-        { 
-          label: 'Hobbies', 
-          value: character?.occupations?.filter(occ => occ.type === 'hobby')?.map(h => h.result).join(', ') || 'Upcoming',
-          status: getFieldStatus(character?.occupations?.filter(occ => occ.type === 'hobby'))
+        {
+          label: 'Hobbies',
+          value: character?.hobbies?.map(h => h.name).join(', ') || 'Upcoming',
+          status: getFieldStatus(character?.hobbies?.[0])
         }
       ]
     },
@@ -412,10 +398,10 @@ export function ComprehensiveCharacterSheet({
             <div className="p-3">
               <div className={`${section.isScrollable ? 'max-h-64 overflow-y-auto' : ''} grid grid-cols-1 md:grid-cols-2 gap-2`}>
                 {section.fields.map((field, fieldIndex) => (
-                  <div 
+                  <div
                     key={fieldIndex}
-                    className={`flex items-center justify-between px-2 py-1 rounded border ${getStatusColor(field.status)}`}
-                    title={field.description || ''}
+                    className={`flex items-center justify-between px-2 py-1 rounded border ${getStatusColor(field.status as 'filled' | 'pending' | 'empty')}`}
+                    title={(field as any).description || ''}
                   >
                     <span className="text-sm font-medium">{field.label}:</span>
                     <span className="text-sm font-mono">{field.value}</span>

@@ -1,6 +1,6 @@
 // Contacts & Relationships Selection Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { ContactTable } from './ContactTable'
@@ -45,10 +45,10 @@ export function ContactSelector({ onComplete }: ContactSelectorProps) {
         // Mark some tables as completed based on existing contacts
         const completed = new Set<string>()
         existingContacts.forEach(contact => {
-          if (contact.type === 'companion') completed.add('753')
-          if (contact.type === 'rival') completed.add('754')
-          if (contact.type === 'family') completed.add('755')
-          if (contact.type === 'professional') completed.add('756')
+          if (contact.type === 'Companion') completed.add('753')
+          if (contact.type === 'Rival') completed.add('754')
+          if (contact.type === 'Family') completed.add('755')
+          if (contact.type === 'Contact') completed.add('756')
         })
         setCompletedTables(completed)
       }

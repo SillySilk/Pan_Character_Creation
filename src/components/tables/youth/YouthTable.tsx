@@ -1,9 +1,8 @@
 // Youth Events Table Component for PanCasting
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { YouthTable as YouthTableType } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import { TableService } from '../../../services/tableService'
 import type { DiceRoll } from '../../../types/tables'
@@ -22,9 +21,8 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
   const [currentRoll, setCurrentRoll] = useState<DiceRoll | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
   const [showFullTable, setShowFullTable] = useState(false)
-  
+
   const { character, updateCharacter } = useCharacterStore()
-  const { currentStep } = useGenerationStore()
   
   // Use global singleton TableEngine and persistent TableService
   const tableEngine = getGlobalTableEngine()
@@ -58,8 +56,8 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
   }
 
   const handleRoll = async () => {
-    if (!table) return
-    
+    if (!table || !character) return
+
     setRolling(true)
     
     try {
@@ -107,8 +105,8 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
   }
 
   const handleManualSelect = async (entryId: string) => {
-    if (!table) return
-    
+    if (!table || !character) return
+
     const entry = table.entries.find(e => e.id === entryId)
     if (!entry) return
     
@@ -259,7 +257,7 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
             <div className="space-y-2">
               <h5 className={`font-semibold ${colors.text}`}>Effects:</h5>
               <div className="space-y-2">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: any, index: number) => (
                   <div key={index} className="p-2 bg-white rounded border">
                     {effect.type === 'trait' && (
                       <div className="flex items-center gap-2">

@@ -8,7 +8,15 @@ export interface Character {
   level?: number
   attributes?: Record<string, any>
   generationStep?: number
-  lastModified?: Date
+  lastModified?: Date | string
+
+  // Ability Scores (optional, may be calculated)
+  strength?: number
+  dexterity?: number
+  constitution?: number
+  intelligence?: number
+  wisdom?: number
+  charisma?: number
   
   // Heritage & Birth (100s)
   race: Race
@@ -100,6 +108,9 @@ export interface Family {
   relationships: Relationship[]
   notableFeatures: string[]
   socialConnections: string[]
+  siblings?: number
+  parents?: string
+  status?: string
 }
 
 export interface FamilyMember {
@@ -126,9 +137,14 @@ export interface Occupation {
   skills: Skill[]
   income?: string
   socialStatus?: string
+  result?: string
+  description?: string
+  effects?: any[]
+  category?: string
 }
 
 export interface Apprenticeship {
+  name?: string
   occupation: Occupation
   master: NPC
   duration: number
@@ -146,6 +162,7 @@ export interface Skill {
   description?: string
   source: string // Where the skill was learned
   dndEquivalent?: string
+  specialty?: string
 }
 
 export interface Hobby {
@@ -187,6 +204,7 @@ export interface Values {
   mostValuedPerson: string
   mostValuedThing: string
   mostValuedAbstraction: string
+  mostValuedConcept?: string
   strength: TraitStrength
   motivations: string[]
 }
@@ -221,6 +239,11 @@ export interface GenerationStep {
   notes?: string
   skipped?: boolean
   manualSelection?: boolean
+  result?: string
+  step?: string
+  rollDetails?: any
+  roll?: number
+  effects?: any[]
 }
 
 // Utility Types
@@ -240,40 +263,69 @@ export interface Event {
   category: EventCategory
   period: LifePeriod
   age?: number
+  result?: string
+  eventType?: string
+  lifePeriod?: string
+  ageRange?: string
+  modifiers?: any
+  effects?: any[]
+  tableId?: string
+  rollValue?: number
+  timestamp?: number
 }
 
 export interface NPC {
   id: string
   name: string
   type: NPCType
+  description?: string
 }
 
 export interface Companion extends NPC {
   loyalty: 'Weak' | 'Average' | 'Strong' | 'Devoted'
+  description?: string
 }
 
 export interface Rival extends NPC {
   conflictType: string
+  description?: string
 }
 
 export interface Relationship {
   id: string
   person: NPC
   type: RelationshipType
+  name?: string
+  relationship?: string
+  result?: string
 }
 
 export interface Gift {
   id: string
   name: string
   type: string
+  description?: string
+  quality?: string
+  value?: string
+  giver?: string
+  occasion?: string
+  significance?: string
 }
 
 export interface Legacy extends Gift {
-  inheritance: boolean
+  inheritance?: boolean
+  description?: string
+  origin?: string
+  history?: string
 }
 
 export interface SpecialItem extends Gift {
-  rarity: string
+  rarity?: string
+  description?: string
+  quality?: string
+  result?: string
+  properties?: string[]
+  origin?: string
 }
 
 // Re-export DDStats from dnd.ts for full D&D integration

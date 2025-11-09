@@ -1,6 +1,5 @@
 // Wizard Layout Component for PanCasting
 
-import React from 'react'
 import { CharacterSummary } from '../character/CharacterSummary'
 import { StepNavigation, StepProgress } from './StepNavigation'
 import { ProgressTracker } from './ProgressTracker'

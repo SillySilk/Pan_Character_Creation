@@ -20,7 +20,10 @@ import type {
   DD5eConverter,
   DD5eValidation,
   DD5eAbilityScores,
-  DD5eSkillProficiencies
+  DD5eSkillProficiencies,
+  DD5eBackgroundFeature,
+  DD5eItemType,
+  DD5eItemRarity
 } from '@/types/dnd5e'
 import { abilityScoreGenerator, type AbilityScores } from './abilityScoreGenerator'
 
@@ -37,12 +40,12 @@ export interface UnifiedDNDStats {
  * Provides unified interface for both D&D 3.5 and 5e integration
  */
 export class DNDIntegrationService {
-  private dd35Converter: DD35Converter
-  private dd5eConverter: DD5eConverter
+  private dd35Converter: DD35ConverterImpl
+  private dd5eConverter: DD5eConverterImpl
 
   constructor() {
-    this.dd35Converter = new DD35Converter()
-    this.dd5eConverter = new DD5eConverter()
+    this.dd35Converter = new DD35ConverterImpl()
+    this.dd5eConverter = new DD5eConverterImpl()
   }
 
   /**
@@ -270,9 +273,9 @@ ${sheet.backstory}
   }
 
   private async generatePDF(
-    sheet: DDCharacterSheet | DD5eCharacterSheet, 
-    edition: DNDEdition,
-    options: DDExportOptions | DD5eExportOptions
+    _sheet: DDCharacterSheet | DD5eCharacterSheet,
+    _edition: DNDEdition,
+    _options: DDExportOptions | DD5eExportOptions
   ): Promise<DDExportResult> {
     // PDF generation would require a library like jsPDF or Puppeteer
     // For now, return an error indicating this feature needs implementation
@@ -341,7 +344,7 @@ ${sheet.backstory}
 /**
  * D&D 3.5 Converter Implementation
  */
-class DD35Converter implements DDConverter {
+class DD35ConverterImpl implements DDConverter {
   convertCharacter(character: Character): DDCharacterSheet {
     const abilityModifiers = this.calculateAbilityModifiers(character)
     const skills = this.mapSkills(character)
@@ -353,9 +356,10 @@ class DD35Converter implements DDConverter {
       level: character.level || 1,
       alignment: this.mapAlignment(character),
       age: character.age,
-      
+      size: 'Medium', // Default size, can be overridden based on race
+
       abilities: this.generateAbilityScores(character),
-      
+
       hitPoints: this.calculateHitPoints(character),
       armorClass: 10, // Base AC, will be calculated based on equipment
       touch: 10,
@@ -416,16 +420,10 @@ class DD35Converter implements DDConverter {
       s.name.toLowerCase().includes('fight')
     ).length
     
-    const magicSkills = character.skills.filter(s => 
+    const magicSkills = character.skills.filter(s =>
       s.name.toLowerCase().includes('magic') ||
       s.name.toLowerCase().includes('spell') ||
       s.description?.toLowerCase().includes('magic')
-    ).length
-    
-    const socialSkills = character.skills.filter(s => 
-      s.type === 'Social' ||
-      s.name.toLowerCase().includes('diplomacy') ||
-      s.name.toLowerCase().includes('bluff')
     ).length
 
     // Fighter suggestion - check combat skills OR military occupations
@@ -481,7 +479,7 @@ class DD35Converter implements DDConverter {
     return Math.floor(gold)
   }
 
-  generateBackgroundFeatures(character: Character): any[] {
+  generateBackgroundFeatures(_character: Character): any[] {
     return [] // Implementation would go here
   }
 
@@ -698,7 +696,7 @@ class DD35Converter implements DDConverter {
 /**
  * D&D 5e Converter Implementation
  */
-class DD5eConverter implements DD5eConverter {
+class DD5eConverterImpl implements DD5eConverter {
   convertCharacter(character: Character): DD5eCharacterSheet {
     const abilityScores = this.calculateAbilityScores(character)
     const abilityModifiers = this.calculateAbilityModifiers(abilityScores)
@@ -802,7 +800,7 @@ class DD5eConverter implements DD5eConverter {
       s.name.toLowerCase().includes('magic') || s.type === 'Academic'
     ).length
     
-    const socialSkills = character.skills.filter(s => 
+    const socialSkills = character.skills.filter(s =>
       s.type === 'Social'
     ).length
     
@@ -855,9 +853,7 @@ class DD5eConverter implements DD5eConverter {
     // Analyze character's occupations and background for suggestions
     const hasAcademic = character.occupations.some(o => o.type === 'Academic')
     const hasMilitary = character.occupations.some(o => o.type === 'Military')
-    const hasCriminal = character.occupations.some(o => o.type === 'Criminal')
-    const hasReligious = character.occupations.some(o => o.type === 'Religious')
-    
+
     if (hasAcademic) {
       suggestions.push({
         name: 'Sage',
@@ -1079,7 +1075,9 @@ class DD5eConverter implements DD5eConverter {
   }
 
   private generateAllies(character: Character): string {
-    return character.companions.concat(character.npcs).map(c => c.name).join(', ')
+    const companions = character.companions.map(c => c.name)
+    const npcs = character.npcs.map(n => n.name)
+    return [...companions, ...npcs].join(', ')
   }
 }
 

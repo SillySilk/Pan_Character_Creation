@@ -902,6 +902,17 @@ export const useGenerationStore = create<GenerationStore>()(
           console.error('Failed to clear generation session:', error)
         }
       }
+    },
+
+    // Computed property: current step
+    get currentStep() {
+      const { steps, currentStepIndex } = get()
+      return steps[currentStepIndex] || null
+    },
+
+    // Alias for createSnapshot
+    addToHistory: (description: string, characterState?: any) => {
+      get().createSnapshot(description, characterState)
     }
   }))
 )

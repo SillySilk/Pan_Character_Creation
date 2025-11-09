@@ -1,9 +1,9 @@
 // Miscellaneous Events Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { TableService } from '../../../services/tableService'
-import { TableEngine } from '../../../services/tableEngine'
+import { tableService } from '../../../services/tableService'
+import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { TableProcessingResult, MiscellaneousTable as MiscellaneousTableType } from '../../../types/tables'
 import type { Event } from '../../../types/character'
 
@@ -25,7 +25,7 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
   useEffect(() => {
     const loadTable = async () => {
       try {
-        const tableData = await TableService.getTable(tableId)
+        const tableData = await tableService.getTable(tableId)
         if (tableData && tableData.category === 'miscellaneous') {
           setTable(tableData as MiscellaneousTableType)
         } else {
@@ -46,7 +46,8 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
     setError(null)
 
     try {
-      const rollResult = await TableEngine.processTable(table, character, rollValue)
+      const tableEngine = getGlobalTableEngine()
+      const rollResult = await tableEngine.processTable(table, character || {}, rollValue ? { manualSelection: rollValue } : {})
       setResult(rollResult)
 
       // Apply the result to character
@@ -54,14 +55,15 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
         // Create the event
         const newEvent: Event = {
           id: `misc_${Date.now()}`,
-          type: table.eventType || 'miscellaneous',
-          category: 'miscellaneous',
-          period: 'Miscellaneous',
+          name: rollResult.entry.result,
+          eventType: table.eventType || 'miscellaneous',
+          category: 'Miscellaneous',
+          period: 'Adulthood',
           age: character.age || 0,
           result: rollResult.entry.result,
           description: rollResult.entry.description || '',
           tableId: table.id,
-          rollValue: rollResult.rollResult?.finalResult || 0,
+          rollValue: rollResult.rollResult || 0,
           effects: rollResult.entry.effects || [],
           timestamp: Date.now()
         }
@@ -223,7 +225,7 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
         <div className={`bg-${colorClass}-50 border-2 border-${colorClass}-500 rounded-lg p-4 animate-fade-in`}>
           <div className="text-center mb-4">
             <div className={`text-2xl font-bold text-${colorClass}-800 mb-2`}>
-              🎯 Rolled: {result.rollResult?.finalResult}
+              🎯 Rolled: {result.rollResult}
             </div>
             <div className={`text-lg font-semibold text-${colorClass}-700`}>
               {result.entry?.result}
@@ -276,7 +278,7 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-medium text-gray-800 mb-3">Sample Events (Roll {table.diceType}):</h4>
           <div className="grid grid-cols-1 gap-2 text-sm">
-            {table.entries.slice(0, 5).map((entry, index) => (
+            {table.entries.slice(0, 5).map((entry,_index) => (
               <div key={entry.id} className="flex items-start justify-between py-2 border-b border-gray-200 last:border-b-0">
                 <span className="text-gray-600 font-mono text-xs">
                   {Array.isArray(entry.rollRange) ? 

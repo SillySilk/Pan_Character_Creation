@@ -1,7 +1,7 @@
 // Adulthood Events Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
-import { AdulthoodTable as AdulthoodTableType } from '../../../types/tables'
+import { useState, useEffect } from 'react'
+import { AdulthoodTable as AdulthoodTableType, Effect } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
@@ -20,12 +20,11 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
   const [rolling, setRolling] = useState(false)
   const [currentRoll, setCurrentRoll] = useState<DiceRoll | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
-  const [modifierApplied, setModifierApplied] = useState(false)
+  const [_modifierApplied, setModifierApplied] = useState(false)
   const [showModifierDetails, setShowModifierDetails] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
-  const { getCurrentStep, createSnapshot } = useGenerationStore()
-  const currentStep = getCurrentStep()
+  const { createSnapshot } = useGenerationStore()
   
   const tableEngine = getGlobalTableEngine()
 
@@ -61,8 +60,8 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
       console.error('❌ AdulthoodTable: Failed to load adulthood table:', error)
       console.error('❌ AdulthoodTable: Error details:', {
         tableId,
-        errorMessage: error.message,
-        errorStack: error.stack
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined
       })
     } finally {
       setLoading(false)
@@ -76,17 +75,17 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
     
     try {
       // Calculate SolMod for adulthood tables
-      const solMod = character.activeModifiers?.solMod || 0
-      
+      const solMod = character?.activeModifiers?.solMod || 0
+
       // Roll 2d20 + SolMod as per Central Casting rules
       const combinedRoll = rollWithModifiers('2d20', { solMod })
       const totalRoll = combinedRoll.finalResult
-      
+
       setCurrentRoll(combinedRoll)
       setModifierApplied(solMod !== 0)
-      
+
       // Process the table result with the calculated roll
-      const result = await tableEngine.processTable(table.id, character, undefined, totalRoll)
+      const result = await tableEngine.processTable(table.id, character || {}, { manualSelection: totalRoll })
       
       if (result.success && result.entry) {
         setSelectedEntry(result.entry)
@@ -149,7 +148,7 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
     
     // Process effects
     try {
-      const result = await tableEngine.processTable(table.id, character, entry.id)
+      const result = await tableEngine.processTable(table.id, character || {}, { manualSelection: entry.id })
       
       if (result.success && result.character) {
         updateCharacter(result.character)
@@ -175,7 +174,7 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
   }
 
   const getSolModValue = () => {
-    return character.activeModifiers?.solMod || 0
+    return character?.activeModifiers?.solMod || 0
   }
 
   const getLifeStageIcon = (stage: string) => {
@@ -218,7 +217,7 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
       {/* Table Header */}
       <div className="bg-parchment-100 border-2 border-amber-600 rounded-lg p-4">
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-2xl">{getLifeStageIcon(table.lifeStage)}</span>
+          <span className="text-2xl">{getLifeStageIcon(table.lifeStage || '')}</span>
           <h3 className="text-xl font-bold text-amber-800">{table.name}</h3>
           {table.lifeStage && (
             <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
@@ -323,7 +322,7 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
             <div className="space-y-3">
               <h5 className="font-semibold text-purple-800">Life Impact:</h5>
               <div className="grid gap-3">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: Effect, index: number) => (
                   <div key={index} className="bg-white p-3 rounded border">
                     {effect.type === 'modifier' && (
                       <div className="flex items-center justify-between">
