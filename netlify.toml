@@ -1,0 +1,50 @@
+# Netlify configuration for PanCasting D&D Character Generator
+
+[build]
+  # Build command
+  command = "npm run build"
+
+  # Directory to deploy (Vite outputs to dist by default)
+  publish = "dist"
+
+  # Node version to use
+  [build.environment]
+    NODE_VERSION = "18"
+
+# Redirect rules for SPA (Single Page Application)
+# This ensures all routes go to index.html for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer-when-downgrade"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Optimize builds
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true
