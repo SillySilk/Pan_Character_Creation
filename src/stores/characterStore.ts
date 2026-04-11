@@ -34,6 +34,8 @@ import type { Effect } from '@/types/tables'
 import { DEFAULTS } from '@/utils/constants'
 import { modifierCalculator } from '@/services/modifierCalculator'
 import { markdownCharacterService } from '../services/markdownCharacterService'
+import { abilityScoreGenerator } from '@/services/abilityScoreGenerator'
+import { dndIntegrationService } from '@/services/dndIntegrationService'
 
 /**
  * Character store interface
@@ -1168,10 +1170,92 @@ export const useCharacterStore = create<CharacterStore>()(
     calculateDNDModifiers: () => {
       const { character } = get()
       if (!character) return createEmptyCharacter().dndIntegration
-      
-      // This will be implemented with proper D&D calculation logic
-      // For now, return the existing stats
-      return character.dndIntegration
+
+      // Calculate ability scores using the intelligent generator
+      const abilityScores = abilityScoreGenerator.generateScores(character, 'intelligent')
+      const finalScores = abilityScoreGenerator.applyRacialModifiers(abilityScores, character.race.name)
+      const abilityModifiers = abilityScoreGenerator.calculateModifiers(finalScores)
+
+      // Calculate skill bonuses
+      const skillBonuses: SkillBonuses = {}
+      character.skills.forEach(skill => {
+        skillBonuses[skill.name] = {
+          totalBonus: skill.rank,
+          ranks: skill.rank,
+          synergy: 0,
+          circumstance: 0,
+          racial: 0,
+          background: 0,
+          sources: [skill.source],
+          description: skill.description
+        }
+      })
+
+      // Calculate starting gold based on social status
+      const startingGold = Math.floor(100 * character.socialStatus.moneyMultiplier)
+
+      // Gather background features from events
+      const backgroundFeatures: BackgroundFeature[] = []
+
+      character.youthEvents.forEach(event => {
+        backgroundFeatures.push({
+          name: event.name,
+          description: event.description,
+          gameEffect: 'Youth event experience',
+          source: 'Youth Events',
+          category: 'Personal'
+        })
+      })
+
+      character.adulthoodEvents.forEach(event => {
+        backgroundFeatures.push({
+          name: event.name,
+          description: event.description,
+          gameEffect: 'Life experience',
+          source: 'Adulthood Events',
+          category: 'Personal'
+        })
+      })
+
+      // Gather traits from personality
+      const traits = [
+        ...character.personalityTraits.lightside.map(t => t.name),
+        ...character.personalityTraits.neutral.map(t => t.name)
+      ]
+
+      const flaws = character.personalityTraits.darkside.map(t => t.name)
+
+      // Map special items to equipment
+      const equipment: Item[] = character.specialItems.map(item => ({
+        name: item.name || 'Unknown Item',
+        type: 'Miscellaneous',
+        description: '',
+        value: 0,
+        magical: false,
+        history: ''
+      }))
+
+      const dndStats: DDStats = {
+        abilityModifiers,
+        skillBonuses,
+        startingGold,
+        bonusLanguages: [],
+        traits,
+        flaws,
+        equipment,
+        specialAbilities: [],
+        backgroundFeatures
+      }
+
+      // Update character with calculated stats
+      set({
+        character: {
+          ...character,
+          dndIntegration: dndStats
+        }
+      })
+
+      return dndStats
     },
 
     // Computed properties

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Character } from '../../types/character'
 import { useCharacterStore } from '../../stores/characterStore'
+import { exportService, type ExportFormat } from '../../services/exportService'
 
 interface CharacterSheetProps {
   character?: Character
@@ -11,20 +12,31 @@ interface CharacterSheetProps {
   className?: string
 }
 
-export function CharacterSheet({ 
-  character: propCharacter, 
+export function CharacterSheet({
+  character: propCharacter,
   editable = false,
   onSave,
-  className = '' 
+  className = ''
 }: CharacterSheetProps) {
   const { character: storeCharacter } = useCharacterStore()
   const character = propCharacter || storeCharacter
-  
-  // Suppress unused variable warnings
-  void editable
-  void onSave
-  
+
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'modifiers' | 'history' | 'export'>('overview')
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async (format: ExportFormat) => {
+    if (!character) return
+
+    setExporting(true)
+    try {
+      await exportService.exportCharacter(character, { format, edition: '3.5' })
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (!character) {
     return (
@@ -384,27 +396,49 @@ export function CharacterSheet({
           <div className="space-y-6">
             <div className="bg-blue-50 rounded-lg p-4">
               <h2 className="text-lg font-bold text-gray-800 mb-4">Export Options</h2>
-              
+
+              {exporting && (
+                <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mb-4 text-center">
+                  <div className="text-yellow-800">Exporting character...</div>
+                </div>
+              )}
+
               <div className="grid md:grid-cols-2 gap-4">
-                <button className="bg-white border-2 border-blue-200 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                <button
+                  onClick={() => handleExport('json')}
+                  disabled={exporting}
+                  className="bg-white border-2 border-blue-200 rounded-lg p-4 hover:border-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <div className="text-2xl mb-2">📄</div>
                   <div className="font-semibold text-blue-800">Export as JSON</div>
                   <div className="text-sm text-gray-600">Raw character data</div>
                 </button>
-                
-                <button className="bg-white border-2 border-green-200 rounded-lg p-4 hover:border-green-400 transition-colors">
+
+                <button
+                  onClick={() => handleExport('dnd35')}
+                  disabled={exporting}
+                  className="bg-white border-2 border-green-200 rounded-lg p-4 hover:border-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <div className="text-2xl mb-2">🎲</div>
-                  <div className="font-semibold text-green-800">D&D 3.5 Export</div>
-                  <div className="text-sm text-gray-600">Character sheet format</div>
+                  <div className="font-semibold text-green-800">D&D 3.5 Sheet</div>
+                  <div className="text-sm text-gray-600">HTML character sheet</div>
                 </button>
-                
-                <button className="bg-white border-2 border-purple-200 rounded-lg p-4 hover:border-purple-400 transition-colors">
+
+                <button
+                  onClick={() => handleExport('text')}
+                  disabled={exporting}
+                  className="bg-white border-2 border-purple-200 rounded-lg p-4 hover:border-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <div className="text-2xl mb-2">📝</div>
                   <div className="font-semibold text-purple-800">Text Summary</div>
                   <div className="text-sm text-gray-600">Readable character description</div>
                 </button>
-                
-                <button className="bg-white border-2 border-orange-200 rounded-lg p-4 hover:border-orange-400 transition-colors">
+
+                <button
+                  onClick={() => handleExport('print')}
+                  disabled={exporting}
+                  className="bg-white border-2 border-orange-200 rounded-lg p-4 hover:border-orange-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <div className="text-2xl mb-2">🖨️</div>
                   <div className="font-semibold text-orange-800">Print Version</div>
                   <div className="text-sm text-gray-600">Printer-friendly format</div>
