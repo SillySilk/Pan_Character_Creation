@@ -14,9 +14,7 @@ export {
 
 export { 
   ModifierCalculator, 
-  modifierCalculator,
-  type ModifierCalculationResult,
-  type ModifierBreakdown
+  modifierCalculator
 } from './modifierCalculator'
 
 export { 

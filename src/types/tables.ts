@@ -11,6 +11,8 @@ export interface Table {
   subtables?: Table[]
   conditions?: TableCondition[]
   description?: string
+  specialRules?: string[]
+  crossReferences?: string[]
 }
 
 export interface TableEntry {
@@ -25,15 +27,29 @@ export interface TableEntry {
   subtableReference?: string
   modifiers?: Partial<Modifiers>
   specialInstructions?: string
+  choices?: Array<{ text: string; value: any }>
 }
 
 export interface Effect {
-  type: 'modifier' | 'trait' | 'skill' | 'item' | 'relationship' | 'occupation' | 'event' | 'property'
+  type: 'modifier' | 'trait' | 'skill' | 'item' | 'relationship' | 'occupation' | 'event' | 'property' | 'balanced'
   target: string
   value: any
   duration?: 'permanent' | 'temporary'
   condition?: string
   description?: string
+  
+  // New fields for balanced modifiers
+  positiveEffects?: BalancedModifier[]
+  negativeEffects?: BalancedModifier[]
+  tradeoffReason?: string
+}
+
+export interface BalancedModifier {
+  type: 'ability' | 'skill' | 'trait' | 'social' | 'special'
+  target: string
+  value: number | string
+  description: string
+  category: 'physical' | 'intellectual' | 'social' | 'psychological'
 }
 
 export interface Condition {
@@ -74,7 +90,7 @@ export type TableCategory =
   | '100s' | '200s' | '300s' | '400s' | '500s' | '600s' | '700s' | '800s' | '900s' // Numeric aliases
 
 // Dice Types
-export type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100' | '2d10' | '2d20' | '3d6' | '1d3' | '1d4' | '1d6'
+export type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100' | '2d10' | '2d20' | '3d6' | '1d3' | '1d4' | '1d6' | '2d6'
 
 // Modifier Keys
 export type ModifierKey = keyof Modifiers

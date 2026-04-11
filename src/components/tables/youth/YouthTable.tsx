@@ -1,11 +1,10 @@
 // Youth Events Table Component for PanCasting
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { YouthTable as YouthTableType } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
-import { TableService } from '../../../services/tableService'
 import type { DiceRoll } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
 
@@ -26,27 +25,18 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
   const { character, updateCharacter } = useCharacterStore()
   const { currentStep } = useGenerationStore()
   
-  // Use global singleton TableEngine and persistent TableService
+  // Use global singleton TableEngine
   const tableEngine = getGlobalTableEngine()
-  const tableServiceRef = useRef(new TableService())
-  const tableService = tableServiceRef.current
 
   useEffect(() => {
-    loadTable()
-  }, [tableId])
-
-  const loadTable = async () => {
     try {
       setLoading(true)
       console.log('🟡 YouthTable: Loading table ID:', tableId)
-      const loadedTable = await tableService.getTable(tableId)
+      const loadedTable = tableEngine.getTable(tableId)
       console.log('🟡 YouthTable: Loaded table:', loadedTable)
       if (loadedTable && loadedTable.category === 'youth') {
         setTable(loadedTable as YouthTableType)
-        // Register the table with the engine
-        tableEngine.registerTable(loadedTable)
         console.log('✅ YouthTable: Table set successfully:', loadedTable.name)
-        console.log('✅ YouthTable: Table registered with engine:', loadedTable.id)
       } else {
         console.error('❌ YouthTable: Table not found or wrong category:', { loadedTable, expectedCategory: 'youth' })
       }
@@ -55,7 +45,7 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
     } finally {
       setLoading(false)
     }
-  }
+  }, [tableId, tableEngine])
 
   const handleRoll = async () => {
     if (!table) return

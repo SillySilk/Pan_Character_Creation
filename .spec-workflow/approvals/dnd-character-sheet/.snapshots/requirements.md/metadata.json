@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/dnd-character-sheet/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-30T03:57:51.801Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759204671794_snjfi62dx",
+      "approvalTitle": "D&D 3.5 Character Sheet Integration Requirements"
+    }
+  ]
+}

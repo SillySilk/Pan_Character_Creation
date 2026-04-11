@@ -1,6 +1,6 @@
 // Character List Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Character } from '../../types/character'
 import { useCharacterStore } from '../../stores/characterStore'
 import { CharacterCard } from './CharacterCard'
@@ -23,7 +23,7 @@ export function CharacterList({
   const [characters, setCharacters] = useState<Character[]>([])
   const [sortBy, setSortBy] = useState<'name' | 'modified' | 'completion'>('modified')
   const [filterBy, setFilterBy] = useState<'all' | 'complete' | 'incomplete'>('all')
-  const { character: currentCharacter, loadCharacter, deleteCharacter } = useCharacterStore()
+  const { character: currentCharacter, loadCharacter, deleteCharacterFromRoster, loadCharacterRoster } = useCharacterStore()
 
   useEffect(() => {
     loadStoredCharacters()
@@ -31,11 +31,8 @@ export function CharacterList({
 
   const loadStoredCharacters = () => {
     try {
-      const stored = localStorage.getItem('pancasting-characters')
-      if (stored) {
-        const parsedCharacters = JSON.parse(stored) as Character[]
-        setCharacters(parsedCharacters)
-      }
+      const roster = loadCharacterRoster()
+      setCharacters(roster)
     } catch (error) {
       console.error('Failed to load characters:', error)
     }
@@ -43,14 +40,9 @@ export function CharacterList({
 
   const handleCharacterDelete = (character: Character) => {
     try {
-      const updatedCharacters = characters.filter(c => c.id !== character.id)
-      setCharacters(updatedCharacters)
-      localStorage.setItem('pancasting-characters', JSON.stringify(updatedCharacters))
-      
-      // If we're deleting the currently selected character, clear it
-      if (currentCharacter?.id === character.id) {
-        deleteCharacter()
-      }
+      deleteCharacterFromRoster(character.id)
+      // Reload the character list to reflect the deletion
+      loadStoredCharacters()
     } catch (error) {
       console.error('Failed to delete character:', error)
     }
@@ -71,7 +63,11 @@ export function CharacterList({
     if (character.youthEvents && character.youthEvents.length > 0) completed++
     if (character.occupations && character.occupations.length > 0) completed++
     if (character.adulthoodEvents && character.adulthoodEvents.length > 0) completed++
-    if (character.personalityTraits && character.personalityTraits.length > 0) completed++
+    if (character.personalityTraits && 
+        (character.personalityTraits.lightside.length > 0 || 
+         character.personalityTraits.neutral.length > 0 || 
+         character.personalityTraits.darkside.length > 0 || 
+         character.personalityTraits.exotic.length > 0)) completed++
     if (character.relationships && character.relationships.length > 0) completed++
     if (character.specialItems && character.specialItems.length > 0) completed++
     if (character.attributes && Object.keys(character.attributes).length > 0) completed++

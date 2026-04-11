@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { TableService } from '../../../services/tableService'
-import { TableEngine } from '../../../services/tableEngine'
+import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { TableProcessingResult, MiscellaneousTable as MiscellaneousTableType } from '../../../types/tables'
 import type { Event } from '../../../types/character'
 
@@ -20,24 +19,31 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
   const [error, setError] = useState<string | null>(null)
 
   const { character, addEvent, addPersonalityTrait } = useCharacterStore()
+  const tableEngine = getGlobalTableEngine()
 
   // Load table data
   useEffect(() => {
-    const loadTable = async () => {
-      try {
-        const tableData = await TableService.getTable(tableId)
-        if (tableData && tableData.category === 'miscellaneous') {
-          setTable(tableData as MiscellaneousTableType)
-        } else {
-          setError(`Table ${tableId} not found or not a miscellaneous table`)
-        }
-      } catch (err) {
-        setError(`Failed to load table ${tableId}: ${err}`)
+    try {
+      console.log('🟡 MiscellaneousTable: Loading table ID:', tableId)
+      const tableData = tableEngine.getTable(tableId)
+      console.log('🟡 MiscellaneousTable: Loaded table:', tableData)
+      
+      if (tableData && tableData.category === 'miscellaneous') {
+        setTable(tableData as MiscellaneousTableType)
+        console.log('✅ MiscellaneousTable: Table set successfully:', tableData.name)
+      } else {
+        console.error('❌ MiscellaneousTable: Table not found or wrong category:', { 
+          tableData, 
+          expectedCategory: 'miscellaneous',
+          tableCategory: tableData?.category 
+        })
+        setError(`Table ${tableId} not found or not a miscellaneous table`)
       }
+    } catch (err) {
+      console.error('❌ MiscellaneousTable: Failed to load table:', err)
+      setError(`Failed to load table ${tableId}: ${err}`)
     }
-
-    loadTable()
-  }, [tableId])
+  }, [tableId, tableEngine])
 
   const handleRoll = async (rollValue?: number) => {
     if (!table || !character) return
@@ -46,7 +52,7 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
     setError(null)
 
     try {
-      const rollResult = await TableEngine.processTable(table, character, rollValue)
+      const rollResult = await tableEngine.processTable(tableId, character, { manualSelection: rollValue })
       setResult(rollResult)
 
       // Apply the result to character

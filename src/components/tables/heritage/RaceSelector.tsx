@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
-import { TableService } from '../../../services/tableService'
 import { HeritageTable } from './HeritageTable'
 
 interface RaceSelectorProps {

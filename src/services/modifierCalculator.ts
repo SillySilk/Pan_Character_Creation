@@ -1,295 +1,361 @@
-// Modifier calculation service for PanCasting
+// Balanced Modifier Calculator Service for PanCasting
 
-import type { Character, Modifiers } from '../types/character'
-import type { Table } from '../types/tables'
-
-export interface ModifierCalculationResult {
-  total: number
-  breakdown: ModifierBreakdown[]
-  warnings: string[]
-}
-
-export interface ModifierBreakdown {
-  source: string
-  type: string
-  value: number
-  description: string
-}
+import type { 
+  Character, 
+  AppliedModifier, 
+  BalancedModifier, 
+  ModifierSummary, 
+  BalanceAssessment
+} from '../types/character'
+import type { Effect } from '../types/tables'
 
 export class ModifierCalculator {
-  private readonly MIN_MODIFIER = -20
-  private readonly MAX_MODIFIER = 20
-
+  
   /**
-   * Calculate total modifiers for a table roll
+   * Apply a balanced effect to a character
    */
-  calculateTableModifiers(
-    table: Table,
-    character: Partial<Character>,
-    additionalModifiers: Record<string, number> = {}
-  ): ModifierCalculationResult {
-    const breakdown: ModifierBreakdown[] = []
-    const warnings: string[] = []
-    let total = 0
-
-    // Base character modifiers
-    if (character.activeModifiers) {
-      const characterMods = this.getCharacterModifiers(character.activeModifiers, table)
-      breakdown.push(...characterMods.breakdown)
-      total += characterMods.total
+  applyBalancedEffect(
+    character: Character, 
+    effect: Effect, 
+    sourceEvent: string, 
+    sourceTable: string
+  ): Character {
+    if (effect.type !== 'balanced' || !effect.positiveEffects || !effect.negativeEffects) {
+      console.warn('Attempted to apply non-balanced effect as balanced effect')
+      return character
     }
 
-    // Cultural modifiers
-    if (character.culture) {
-      const cultureMod = this.getCultureModifier(character.culture, table)
-      if (cultureMod.value !== 0) {
-        breakdown.push(cultureMod)
-        total += cultureMod.value
-      }
+    // Ensure appliedModifiers array exists
+    if (!character.appliedModifiers) {
+      character.appliedModifiers = []
     }
 
-    // Social status modifiers
-    if (character.socialStatus) {
-      const socialMod = this.getSocialStatusModifier(character.socialStatus, table)
-      if (socialMod.value !== 0) {
-        breakdown.push(socialMod)
-        total += socialMod.value
-      }
+    const appliedModifier: AppliedModifier = {
+      sourceEvent,
+      sourceTable,
+      positive: effect.positiveEffects,
+      negative: effect.negativeEffects,
+      appliedAt: new Date(),
+      tradeoffReason: effect.tradeoffReason
     }
 
-    // Birth circumstance modifiers
-    if (character.birthCircumstances) {
-      const birthMod = this.getBirthModifier(character.birthCircumstances, table)
-      if (birthMod.value !== 0) {
-        breakdown.push(birthMod)
-        total += birthMod.value
-      }
+    // Apply the modifier effects to character stats
+    const updatedCharacter = this.applyModifierEffects(character, effect.positiveEffects, effect.negativeEffects)
+    
+    // Ensure appliedModifiers array exists
+    if (!updatedCharacter.appliedModifiers) {
+      updatedCharacter.appliedModifiers = []
     }
-
-    // Additional modifiers
-    Object.entries(additionalModifiers).forEach(([key, value]) => {
-      if (value !== 0) {
-        breakdown.push({
-          source: 'Additional',
-          type: key,
-          value,
-          description: `Additional modifier: ${key}`
-        })
-        total += value
-      }
+    
+    // Track the application
+    updatedCharacter.appliedModifiers.push(appliedModifier)
+    
+    // Update summary
+    updatedCharacter.modifierSummary = this.calculateModifierSummary(updatedCharacter)
+    
+    console.log(`✅ Applied balanced modifier from ${sourceEvent}:`, {
+      positive: effect.positiveEffects.length,
+      negative: effect.negativeEffects.length,
+      tradeoff: effect.tradeoffReason
     })
-
-    // Apply bounds checking
-    const originalTotal = total
-    total = Math.max(this.MIN_MODIFIER, Math.min(this.MAX_MODIFIER, total))
     
-    if (total !== originalTotal) {
-      warnings.push(
-        `Modifier clamped from ${originalTotal} to ${total} (range: ${this.MIN_MODIFIER} to ${this.MAX_MODIFIER})`
-      )
-    }
-
-    return {
-      total,
-      breakdown,
-      warnings
-    }
-  }
-
-  /**
-   * Get character modifiers relevant to the table
-   */
-  private getCharacterModifiers(
-    activeModifiers: Modifiers,
-    table: Table
-  ): { total: number; breakdown: ModifierBreakdown[] } {
-    const breakdown: ModifierBreakdown[] = []
-    let total = 0
-
-    // Apply table-specific modifier if it exists
-    if (table.modifier) {
-      const modifierKey = table.modifier as string
-      const value = activeModifiers[modifierKey] || 0
-      if (value !== 0) {
-        breakdown.push({
-          source: 'Character',
-          type: modifierKey,
-          value,
-          description: this.getModifierDescription(modifierKey)
-        })
-        total += value
-      }
-    }
-
-    return { total, breakdown }
-  }
-
-  /**
-   * Get culture modifier for table
-   */
-  private getCultureModifier(culture: any, _table: Table): ModifierBreakdown {
-    // Culture modifier (CuMod) applies to many tables
-    const cuMod = culture.cuMod || 0
-    
-    return {
-      source: 'Culture',
-      type: 'CuMod',
-      value: cuMod,
-      description: `Cultural modifier from ${culture.name} (${culture.type})`
-    }
-  }
-
-  /**
-   * Get social status modifier for table
-   */
-  private getSocialStatusModifier(socialStatus: any, _table: Table): ModifierBreakdown {
-    // Social status modifier (SolMod) applies to many tables
-    const solMod = socialStatus.solMod || 0
-    
-    return {
-      source: 'Social Status',
-      type: 'SolMod', 
-      value: solMod,
-      description: `Social status modifier from ${socialStatus.level}`
-    }
-  }
-
-  /**
-   * Get birth circumstance modifier for table
-   */
-  private getBirthModifier(birthCircumstances: any, _table: Table): ModifierBreakdown {
-    // Birth modifier (BiMod) applies to certain tables
-    const biMod = birthCircumstances.biMod || 0
-    
-    return {
-      source: 'Birth',
-      type: 'BiMod',
-      value: biMod,
-      description: `Birth circumstance modifier (${birthCircumstances.legitimacy})`
-    }
-  }
-
-  /**
-   * Calculate modifiers for specific character attributes
-   */
-  calculateAttributeModifiers(character: Partial<Character>): Modifiers {
-    const modifiers: Modifiers = {
-      cuMod: 0,
-      solMod: 0,
-      tiMod: 0,
-      biMod: 0,
-      legitMod: 0
-    }
-
-    // Culture modifier
-    if (character.culture) {
-      modifiers.cuMod = character.culture.cuMod || 0
-    }
-
-    // Social status modifier
-    if (character.socialStatus) {
-      modifiers.solMod = character.socialStatus.solMod || 0
-    }
-
-    // Birth modifiers
-    if (character.birthCircumstances) {
-      modifiers.biMod = character.birthCircumstances.biMod || 0
-      modifiers.legitMod = character.birthCircumstances.legitimacy === 'Legitimate' ? 0 : -1
-    }
-
-    // Calculate derived modifiers from occupations, events, etc.
-    this.addDerivedModifiers(character, modifiers)
-
-    return modifiers
-  }
-
-  /**
-   * Add modifiers derived from events, occupations, etc.
-   */
-  private addDerivedModifiers(character: Partial<Character>, modifiers: Modifiers): void {
-    // Occupation-based modifiers
-    if (character.occupations) {
-      character.occupations.forEach(occupation => {
-        // High-ranking occupations might provide title modifiers
-        if (occupation.rank >= 4) {
-          modifiers.tiMod += 1
-        }
-      })
-    }
-
-    // Event-based modifiers would be calculated here
-    // These would come from specific events that grant ongoing bonuses
-    
-    // Family status modifiers
-    if (character.family && character.family.socialConnections) {
-      // High-status family connections might provide social modifiers
-      const connectionCount = character.family.socialConnections.length
-      if (connectionCount > 3) {
-        modifiers.solMod += Math.floor(connectionCount / 3)
-      }
-    }
-  }
-
-  /**
-   * Recalculate all character modifiers
-   */
-  recalculateCharacterModifiers(character: Partial<Character>): Character {
-    const updatedCharacter = { ...character } as Character
-    updatedCharacter.activeModifiers = this.calculateAttributeModifiers(character)
     return updatedCharacter
   }
 
   /**
-   * Get description for modifier type
+   * Apply modifier effects to character statistics
    */
-  private getModifierDescription(modifierType: string): string {
-    const descriptions: Record<string, string> = {
-      cuMod: 'Cultural background modifier',
-      solMod: 'Social status modifier',
-      tiMod: 'Title and rank modifier',
-      biMod: 'Birth circumstances modifier',
-      legitMod: 'Legitimacy modifier'
-    }
-    
-    return descriptions[modifierType] || `${modifierType} modifier`
+  private applyModifierEffects(
+    character: Character, 
+    positiveEffects: BalancedModifier[], 
+    negativeEffects: BalancedModifier[]
+  ): Character {
+    let updatedCharacter = { ...character }
+
+    // Apply positive effects
+    positiveEffects.forEach(effect => {
+      updatedCharacter = this.applySingleModifier(updatedCharacter, effect)
+    })
+
+    // Apply negative effects
+    negativeEffects.forEach(effect => {
+      updatedCharacter = this.applySingleModifier(updatedCharacter, effect)
+    })
+
+    return updatedCharacter
   }
 
   /**
-   * Check if modifiers are within valid ranges
+   * Apply a single modifier to the character
    */
-  validateModifiers(modifiers: Modifiers): { isValid: boolean; errors: string[] } {
-    const errors: string[] = []
-    
-    Object.entries(modifiers).forEach(([key, value]) => {
-      if (typeof value === 'number') {
-        if (value < this.MIN_MODIFIER || value > this.MAX_MODIFIER) {
-          errors.push(`${key} value ${value} is outside valid range (${this.MIN_MODIFIER} to ${this.MAX_MODIFIER})`)
+  private applySingleModifier(
+    character: Character, 
+    modifier: BalancedModifier
+  ): Character {
+    const updatedCharacter = { ...character }
+    const value = typeof modifier.value === 'number' ? modifier.value : parseInt(modifier.value.toString())
+
+    switch (modifier.type) {
+      case 'ability':
+        this.applyAbilityModifier(updatedCharacter, modifier.target, value)
+        break
+      
+      case 'skill':
+        this.applySkillModifier(updatedCharacter, modifier.target, value)
+        break
+      
+      case 'trait':
+        this.applyTraitModifier(updatedCharacter, modifier.target, modifier.description)
+        break
+      
+      case 'social':
+        // Social modifiers are tracked but not applied directly to character stats
+        break
+      
+      case 'special':
+        this.applySpecialModifier(updatedCharacter, modifier.target, modifier.value)
+        break
+    }
+
+    return updatedCharacter
+  }
+
+  /**
+   * Apply ability score modifiers
+   */
+  private applyAbilityModifier(character: Character, ability: string, value: number): void {
+    // Apply to D&D integration
+    if (character.dndIntegration?.abilityModifiers) {
+      const abilityKey = ability.toLowerCase() as keyof typeof character.dndIntegration.abilityModifiers
+      if (abilityKey in character.dndIntegration.abilityModifiers) {
+        character.dndIntegration.abilityModifiers[abilityKey] += value
+      }
+    }
+  }
+
+  /**
+   * Apply skill modifiers
+   */
+  private applySkillModifier(character: Character, skill: string, value: number): void {
+    // Find or create skill entry
+    if (!character.skills) {
+      character.skills = []
+    }
+
+    const existingSkill = character.skills.find(s => s.name === skill)
+    if (existingSkill) {
+      existingSkill.rank += value
+      // Ensure rank doesn't go below 0
+      existingSkill.rank = Math.max(0, existingSkill.rank)
+    } else if (value > 0) {
+      // Only add new skills for positive modifiers
+      character.skills.push({
+        name: skill,
+        rank: value,
+        type: 'Survival',
+        source: 'Background Event'
+      })
+    }
+  }
+
+  /**
+   * Apply trait modifiers
+   */
+  private applyTraitModifier(character: Character, trait: string, description: string): void {
+    // Add to appropriate personality trait category or create special traits array
+    if (!character.personalityTraits) {
+      character.personalityTraits = {
+        lightside: [],
+        neutral: [],
+        darkside: [],
+        exotic: []
+      }
+    }
+
+    // For now, add to neutral traits with description
+    character.personalityTraits.neutral.push({
+      name: trait,
+      description,
+      strength: 'Average',
+      source: 'Background Event',
+      type: 'Neutral'
+    })
+  }
+
+  /**
+   * Apply special modifiers (languages, equipment, etc.)
+   */
+  private applySpecialModifier(_character: Character, target: string, _value: any): void {
+    switch (target) {
+      case 'languages':
+        // Would implement language tracking
+        break
+      case 'equipment':
+        // Would implement equipment additions
+        break
+      // Add other special modifier types as needed
+    }
+  }
+
+  /**
+   * Calculate comprehensive modifier summary
+   */
+  calculateModifierSummary(character: Character): ModifierSummary {
+    if (!character.appliedModifiers) {
+      return {
+        abilityScores: {},
+        skills: {},
+        traits: [],
+        socialModifiers: [],
+        overallBalance: {
+          totalPositive: 0,
+          totalNegative: 0,
+          netBalance: 0,
+          warnings: []
         }
+      }
+    }
+
+    const summary: ModifierSummary = {
+      abilityScores: {},
+      skills: {},
+      traits: [],
+      socialModifiers: [],
+      overallBalance: {
+        totalPositive: 0,
+        totalNegative: 0,
+        netBalance: 0,
+        warnings: []
+      }
+    }
+
+    // Aggregate all applied modifiers
+    character.appliedModifiers.forEach(appliedModifier => {
+      // Process positive effects
+      appliedModifier.positive.forEach(effect => {
+        this.addToSummary(summary, effect, 'positive')
+      })
+
+      // Process negative effects
+      appliedModifier.negative.forEach(effect => {
+        this.addToSummary(summary, effect, 'negative')
+      })
+    })
+
+    // Calculate overall balance
+    summary.overallBalance = this.assessBalance(summary)
+
+    return summary
+  }
+
+  /**
+   * Add effect to modifier summary
+   */
+  private addToSummary(summary: ModifierSummary, effect: BalancedModifier, polarity: 'positive' | 'negative'): void {
+    const value = typeof effect.value === 'number' ? effect.value : parseInt(effect.value.toString())
+    const actualValue = polarity === 'negative' ? -Math.abs(value) : Math.abs(value)
+
+    switch (effect.type) {
+      case 'ability':
+        summary.abilityScores[effect.target] = (summary.abilityScores[effect.target] || 0) + actualValue
+        break
+      
+      case 'skill':
+        summary.skills[effect.target] = (summary.skills[effect.target] || 0) + actualValue
+        break
+      
+      case 'trait':
+        if (!summary.traits.includes(effect.description)) {
+          summary.traits.push(effect.description)
+        }
+        break
+      
+      case 'social':
+        summary.socialModifiers.push({
+          context: effect.target,
+          modifier: actualValue,
+          description: effect.description
+        })
+        break
+    }
+
+    // Track for balance calculation
+    if (polarity === 'positive') {
+      summary.overallBalance.totalPositive += Math.abs(value)
+    } else {
+      summary.overallBalance.totalNegative += Math.abs(value)
+    }
+  }
+
+  /**
+   * Assess character balance and generate warnings
+   */
+  private assessBalance(summary: ModifierSummary): BalanceAssessment {
+    const assessment: BalanceAssessment = {
+      totalPositive: summary.overallBalance.totalPositive,
+      totalNegative: summary.overallBalance.totalNegative,
+      netBalance: summary.overallBalance.totalPositive - summary.overallBalance.totalNegative,
+      warnings: []
+    }
+
+    // Check ability score balance
+    const abilityTotal = Object.values(summary.abilityScores).reduce((sum, value) => sum + value, 0)
+    if (Math.abs(abilityTotal) > 3) {
+      assessment.warnings.push(`Ability score total (${abilityTotal}) exceeds recommended limit of ±3`)
+    }
+
+    // Check for extreme skill bonuses
+    Object.entries(summary.skills).forEach(([skill, bonus]) => {
+      if (bonus > 10) {
+        assessment.warnings.push(`${skill} bonus (+${bonus}) exceeds recommended limit of +10`)
+      }
+      if (bonus < -5) {
+        assessment.warnings.push(`${skill} penalty (${bonus}) is very severe`)
       }
     })
 
-    return {
-      isValid: errors.length === 0,
-      errors
+    // Check overall balance
+    const balanceRatio = assessment.totalNegative > 0 ? assessment.totalPositive / assessment.totalNegative : Infinity
+    if (balanceRatio > 2) {
+      assessment.warnings.push('Character has significantly more benefits than drawbacks')
     }
+    if (balanceRatio < 0.5) {
+      assessment.warnings.push('Character has significantly more drawbacks than benefits')
+    }
+
+    return assessment
   }
 
   /**
-   * Get modifier summary for display
+   * Validate character modifier balance
    */
-  getModifierSummary(character: Partial<Character>): string {
-    const modifiers = character.activeModifiers
-    if (!modifiers) return 'No modifiers'
+  validateCharacterBalance(character: Character): BalanceAssessment {
+    if (!character.modifierSummary) {
+      character.modifierSummary = this.calculateModifierSummary(character)
+    }
+    
+    return character.modifierSummary.overallBalance
+  }
 
-    const nonZeroModifiers = Object.entries(modifiers)
-      .filter(([_, value]) => value !== 0)
-      .map(([key, value]) => `${key}: ${value > 0 ? '+' : ''}${value}`)
+  /**
+   * Get modifier breakdown by source
+   */
+  getModifierBreakdown(character: Character): Array<{
+    source: string
+    positive: BalancedModifier[]
+    negative: BalancedModifier[]
+    tradeoffReason?: string
+  }> {
+    if (!character.appliedModifiers) return []
 
-    return nonZeroModifiers.length > 0 
-      ? nonZeroModifiers.join(', ')
-      : 'No active modifiers'
+    return character.appliedModifiers.map(modifier => ({
+      source: modifier.sourceEvent,
+      positive: modifier.positive,
+      negative: modifier.negative,
+      tradeoffReason: modifier.tradeoffReason
+    }))
   }
 }
 
-// Default calculator instance
+// Export singleton instance
 export const modifierCalculator = new ModifierCalculator()

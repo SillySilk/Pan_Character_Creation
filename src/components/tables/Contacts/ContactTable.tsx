@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { TableService } from '../../../services/tableService'
-import { TableEngine } from '../../../services/tableEngine'
+import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { TableProcessingResult, ContactTable as ContactTableType } from '../../../types/tables'
 import type { NPC, Companion, Rival, Relationship } from '../../../types/character'
 
@@ -20,24 +19,31 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
   const [error, setError] = useState<string | null>(null)
 
   const { character, addNPC, addCompanion, addRival, addRelationship } = useCharacterStore()
+  const tableEngine = getGlobalTableEngine()
 
   // Load table data
   useEffect(() => {
-    const loadTable = async () => {
-      try {
-        const tableData = await TableService.getTable(tableId)
-        if (tableData && tableData.category === 'contacts') {
-          setTable(tableData as ContactTableType)
-        } else {
-          setError(`Table ${tableId} not found or not a contacts table`)
-        }
-      } catch (err) {
-        setError(`Failed to load table ${tableId}: ${err}`)
+    try {
+      console.log('🟡 ContactTable: Loading table ID:', tableId)
+      const tableData = tableEngine.getTable(tableId)
+      console.log('🟡 ContactTable: Loaded table:', tableData)
+      
+      if (tableData && tableData.category === 'contacts') {
+        setTable(tableData as ContactTableType)
+        console.log('✅ ContactTable: Table set successfully:', tableData.name)
+      } else {
+        console.error('❌ ContactTable: Table not found or wrong category:', { 
+          tableData, 
+          expectedCategory: 'contacts',
+          tableCategory: tableData?.category 
+        })
+        setError(`Table ${tableId} not found or not a contacts table`)
       }
+    } catch (err) {
+      console.error('❌ ContactTable: Failed to load table:', err)
+      setError(`Failed to load table ${tableId}: ${err}`)
     }
-
-    loadTable()
-  }, [tableId])
+  }, [tableId, tableEngine])
 
   const handleRoll = async (rollValue?: number) => {
     if (!table || !character) return
@@ -46,7 +52,7 @@ export function ContactTable({ tableId, onComplete }: ContactTableProps) {
     setError(null)
 
     try {
-      const rollResult = await TableEngine.processTable(table, character, rollValue)
+      const rollResult = await tableEngine.processTable(tableId, character, { manualSelection: rollValue })
       setResult(rollResult)
 
       // Apply the result to character

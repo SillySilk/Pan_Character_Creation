@@ -85,7 +85,12 @@ export function CharacterEditor({
     traits.lightside?.forEach(trait => result.push({ ...trait, category: 'lightside' }))
     traits.neutral?.forEach(trait => result.push({ ...trait, category: 'neutral' }))
     traits.darkside?.forEach(trait => result.push({ ...trait, category: 'darkside' }))
-    traits.exotic?.forEach(trait => result.push({ ...trait, category: 'exotic' }))
+    traits.exotic?.forEach(trait => result.push({ 
+      ...trait, 
+      category: 'exotic',
+      type: 'Neutral' as const, // ExoticTrait doesn't have type, so default to Neutral
+      strength: trait.strength || 'Moderate' as const
+    }))
     
     return result
   }
@@ -183,7 +188,9 @@ export function CharacterEditor({
     if (!editedCharacter || !editedCharacter.skills) return
     
     const updated = { ...editedCharacter }
-    delete updated.skills[skillName]
+    if (updated.skills) {
+      delete updated.skills[skillName]
+    }
     setEditedCharacter(updated)
     setHasChanges(true)
   }
@@ -193,7 +200,7 @@ export function CharacterEditor({
     
     const savedCharacter = {
       ...editedCharacter,
-      lastModified: new Date().toISOString()
+      lastModified: new Date()
     }
     
     updateCharacter(savedCharacter)

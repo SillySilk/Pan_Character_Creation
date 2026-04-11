@@ -11,6 +11,13 @@ import { contactTables } from './contacts'
 import { specialTables } from './special'
 import { lifeDetailsTables } from './lifeDetails'
 
+// Balanced modifier tables (new system)
+import { balancedYouthTables } from './youth-balanced'
+import { balancedOccupationTables } from './occupations-balanced'
+import balancedAdolescenceEventsTable from './adolescence-balanced'
+import balancedAdulthoodEventsTable from './adulthood-balanced'
+import { balancedPersonalityTables } from './personality-balanced'
+
 // Table registry organized by category
 export const tableRegistry: Record<TableCategory, Table[]> = {
   'heritage': heritageTables,
@@ -202,7 +209,14 @@ export {
   miscellaneousTables,
   contactTables,
   specialTables,
-  lifeDetailsTables
+  lifeDetailsTables,
+  
+  // Balanced tables
+  balancedYouthTables,
+  balancedOccupationTables,
+  balancedAdolescenceEventsTable,
+  balancedAdulthoodEventsTable,
+  balancedPersonalityTables
 }
 
 // Default export

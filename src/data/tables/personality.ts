@@ -376,8 +376,202 @@ export const personalityTraitsTable: PersonalityTable = {
   ]
 }
 
+// Table 503: Exotic Traits
+export const exoticTraitsTable: PersonalityTable = {
+  id: '503',
+  name: 'Exotic Traits',
+  category: 'personality',
+  diceType: 'd100',
+  traitCategory: 'exotic',
+  strengthRating: true,
+  instructions: 'Roll d100 to determine exotic or unusual personality trait',
+  entries: [
+    {
+      id: '503_01',
+      rollRange: [1, 10],
+      result: 'Telepathic Sensitivity',
+      description: 'Can sense others\' emotions or surface thoughts',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Telepathic Sensitivity',
+            description: 'Can sense others\' emotions or surface thoughts'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_02',
+      rollRange: [11, 20],
+      result: 'Prophetic Dreams',
+      description: 'Receives visions of possible futures in dreams',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Prophetic Dreams',
+            description: 'Receives visions of possible futures in dreams'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_03',
+      rollRange: [21, 30],
+      result: 'Animal Communication',
+      description: 'Can understand and communicate with animals',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Animal Communication',
+            description: 'Can understand and communicate with animals'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_04',
+      rollRange: [31, 40],
+      result: 'Supernatural Luck',
+      description: 'Blessed with uncanny good fortune',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Supernatural Luck',
+            description: 'Blessed with uncanny good fortune'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_05',
+      rollRange: [41, 50],
+      result: 'Perfect Memory',
+      description: 'Never forgets anything once experienced',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Perfect Memory',
+            description: 'Never forgets anything once experienced'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_06',
+      rollRange: [51, 60],
+      result: 'Aura Reading',
+      description: 'Can see the spiritual essence of people and places',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Aura Reading',
+            description: 'Can see the spiritual essence of people and places'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_07',
+      rollRange: [61, 70],
+      result: 'Death Sense',
+      description: 'Can sense when someone is near death',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Death Sense',
+            description: 'Can sense when someone is near death'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_08',
+      rollRange: [71, 80],
+      result: 'Temporal Displacement',
+      description: 'Occasionally experiences events out of sequence',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Temporal Displacement',
+            description: 'Occasionally experiences events out of sequence'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_09',
+      rollRange: [81, 90],
+      result: 'Magical Magnetism',
+      description: 'Supernatural forces are drawn to the character',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Magical Magnetism',
+            description: 'Supernatural forces are drawn to the character'
+          }
+        }
+      ]
+    },
+    {
+      id: '503_10',
+      rollRange: [91, 100],
+      result: 'Dual Consciousness',
+      description: 'Shares mental space with another personality',
+      personalityTrait: 'E',
+      effects: [
+        {
+          type: 'trait',
+          target: 'personalityTraits',
+          value: {
+            type: 'Exotic',
+            name: 'Dual Consciousness',
+            description: 'Shares mental space with another personality'
+          }
+        }
+      ]
+    }
+  ]
+}
+
 // Export all personality tables
 export const personalityTables: Table[] = [
   coreValuesTable,
-  personalityTraitsTable
+  personalityTraitsTable,
+  exoticTraitsTable
 ]

@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { TableService } from '../../../services/tableService'
-import { TableEngine } from '../../../services/tableEngine'
+import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { TableProcessingResult, SpecialTable as SpecialTableType } from '../../../types/tables'
 import type { Gift, Legacy, SpecialItem } from '../../../types/character'
 
@@ -20,24 +19,31 @@ export function SpecialTable({ tableId, onComplete }: SpecialTableProps) {
   const [error, setError] = useState<string | null>(null)
 
   const { character, addGift, addLegacy, addSpecialItem } = useCharacterStore()
+  const tableEngine = getGlobalTableEngine()
 
   // Load table data
   useEffect(() => {
-    const loadTable = async () => {
-      try {
-        const tableData = await TableService.getTable(tableId)
-        if (tableData && tableData.category === 'special') {
-          setTable(tableData as SpecialTableType)
-        } else {
-          setError(`Table ${tableId} not found or not a special table`)
-        }
-      } catch (err) {
-        setError(`Failed to load table ${tableId}: ${err}`)
+    try {
+      console.log('🟡 SpecialTable: Loading table ID:', tableId)
+      const tableData = tableEngine.getTable(tableId)
+      console.log('🟡 SpecialTable: Loaded table:', tableData)
+      
+      if (tableData && tableData.category === 'special') {
+        setTable(tableData as SpecialTableType)
+        console.log('✅ SpecialTable: Table set successfully:', tableData.name)
+      } else {
+        console.error('❌ SpecialTable: Table not found or wrong category:', { 
+          tableData, 
+          expectedCategory: 'special',
+          tableCategory: tableData?.category 
+        })
+        setError(`Table ${tableId} not found or not a special table`)
       }
+    } catch (err) {
+      console.error('❌ SpecialTable: Failed to load table:', err)
+      setError(`Failed to load table ${tableId}: ${err}`)
     }
-
-    loadTable()
-  }, [tableId])
+  }, [tableId, tableEngine])
 
   const handleRoll = async (rollValue?: number) => {
     if (!table || !character) return
@@ -46,7 +52,7 @@ export function SpecialTable({ tableId, onComplete }: SpecialTableProps) {
     setError(null)
 
     try {
-      const rollResult = await TableEngine.processTable(table, character, rollValue)
+      const rollResult = await tableEngine.processTable(tableId, character, { manualSelection: rollValue })
       setResult(rollResult)
 
       // Apply the result to character

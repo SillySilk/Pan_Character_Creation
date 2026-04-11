@@ -9,6 +9,7 @@ import type {
 } from '../types/tables'
 import type { Character } from '../types/character'
 import { DiceUtils } from '../utils/dice'
+import { modifierCalculator } from './modifierCalculator'
 
 export interface TableEngineConfig {
   validateTables: boolean
@@ -53,6 +54,20 @@ export class TableEngine {
    */
   getTable(tableId: string): Table | undefined {
     return this.tableRegistry.get(tableId)
+  }
+
+  /**
+   * Get all registered tables
+   */
+  getAllTables(): Table[] {
+    return Array.from(this.tableRegistry.values())
+  }
+
+  /**
+   * Get all registered table IDs
+   */
+  getAllTableIds(): string[] {
+    return Array.from(this.tableRegistry.keys())
   }
 
   /**
@@ -466,6 +481,8 @@ export class TableEngine {
         return this.processOccupationEffect(effect, character)
       case 'event':
         return this.processEventEffect(effect, character, _table)
+      case 'balanced':
+        return this.processBalancedEffect(effect, character, _table)
       default:
         this.log(`Unknown effect type: ${effect.type}`)
         return effect
@@ -591,8 +608,13 @@ export class TableEngine {
     
     // Apply race to character
     if (effect.target === 'race' && effect.value) {
+      const raceName = effect.value.name || effect.value
+      
+      // Get D&D 3.5 racial modifiers
+      const racialModifiers = this.getRacialModifiers(raceName)
+      
       character.race = {
-        name: effect.value.name || effect.value,
+        name: raceName,
         type: effect.value.type || effect.value.name || effect.value,
         description: effect.value.description || '',
         abilities: effect.value.abilities || [],
@@ -600,8 +622,32 @@ export class TableEngine {
         size: effect.value.size || 'Medium',
         speed: effect.value.speed || 30,
         events: character.race?.events || [],
-        modifiers: character.race?.modifiers || {}
+        modifiers: racialModifiers
       }
+      
+      // Apply racial modifiers to character ability scores
+      if (racialModifiers && Object.keys(racialModifiers).length > 0) {
+        const abilityMapping: Record<string, keyof Character> = {
+          'str': 'strength',
+          'dex': 'dexterity', 
+          'con': 'constitution',
+          'int': 'intelligence',
+          'wis': 'wisdom',
+          'cha': 'charisma'
+        }
+        
+        for (const [shortName, modifier] of Object.entries(racialModifiers)) {
+          const fullName = abilityMapping[shortName]
+          if (fullName && modifier !== 0) {
+            // Apply racial modifier to ability score
+            const currentScore = (character as any)[fullName] || 10
+            ;(character as any)[fullName] = currentScore + modifier
+            this.log(`Applied ${raceName} racial modifier: ${fullName} ${modifier > 0 ? '+' : ''}${modifier} (${currentScore} -> ${currentScore + modifier})`)
+          }
+        }
+      }
+      
+      this.log(`Applied racial modifiers for ${raceName}:`, racialModifiers)
     }
 
     return {
@@ -615,8 +661,45 @@ export class TableEngine {
   /**
    * Process skill effects
    */
-  private processSkillEffect(effect: any, _character: Partial<Character>): any {
+  private processSkillEffect(effect: any, character: Partial<Character>): any {
     this.log(`Skill effect: ${effect.value || effect.skillName} modifier ${effect.modifier || effect.rank}`)
+    
+    // Apply skill to character
+    if (effect.target === 'skillPoints' && typeof effect.value === 'number') {
+      // Handle skill points bonus (like humans get +1 skill point per level)
+      if (!character.skills) {
+        character.skills = []
+      }
+      // For now, just log skill points - could be implemented later
+      this.log(`Character gets +${effect.value} skill points per level`)
+    } else if (effect.value || effect.skillName) {
+      // Handle specific skill bonuses
+      const skillName = effect.value || effect.skillName
+      const skillRank = effect.modifier || effect.rank || 1
+      
+      // Initialize skills array if it doesn't exist
+      if (!character.skills) {
+        character.skills = []
+      }
+      
+      // Find existing skill or create new one
+      const existingSkillIndex = character.skills.findIndex(s => s.name === skillName)
+      if (existingSkillIndex !== -1) {
+        // Update existing skill
+        character.skills[existingSkillIndex].rank += skillRank
+      } else {
+        // Add new skill
+        character.skills.push({
+          name: skillName,
+          rank: skillRank,
+          type: 'Professional', // Default type for heritage skills
+          source: 'Heritage/Culture',
+          description: effect.description
+        })
+      }
+      
+      this.log(`Applied skill: ${skillName} rank ${skillRank} to character`)
+    }
     
     // Return the effect structure that matches test expectations
     return {
@@ -936,6 +1019,51 @@ export class TableEngine {
   }
 
   /**
+   * Process balanced effects that include both positive and negative modifiers
+   */
+  private processBalancedEffect(effect: any, character: Partial<Character>, table: Table): any {
+    this.log(`Processing balanced effect with ${effect.positiveEffects?.length || 0} positive and ${effect.negativeEffects?.length || 0} negative effects`)
+    
+    if (effect.type !== 'balanced' || !effect.positiveEffects || !effect.negativeEffects) {
+      this.log('Warning: Invalid balanced effect structure')
+      return effect
+    }
+    
+    try {
+      // Apply the balanced effect using the ModifierCalculator
+      const updatedCharacter = modifierCalculator.applyBalancedEffect(
+        character as Character,
+        effect,
+        table.name || 'Unknown Event',
+        table.id
+      )
+      
+      // Update the character reference (since we're modifying by reference)
+      Object.assign(character, updatedCharacter)
+      
+      this.log(`✅ Applied balanced effect from ${table.name}`)
+      
+      return {
+        type: 'balanced',
+        target: 'character',
+        applied: true,
+        positiveCount: effect.positiveEffects.length,
+        negativeCount: effect.negativeEffects.length,
+        tradeoffReason: effect.tradeoffReason
+      }
+      
+    } catch (error) {
+      this.log(`❌ Error applying balanced effect: ${error}`)
+      return {
+        type: 'balanced',
+        target: 'character',
+        applied: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  /**
    * Check if a roll should be rerolled based on special rules
    */
   private shouldReroll(table: Table, naturalRoll: number): boolean {
@@ -993,6 +1121,23 @@ export class TableEngine {
   }
 
   /**
+   * Get D&D 3.5 racial ability score modifiers
+   */
+  private getRacialModifiers(raceName: string): Record<string, number> {
+    const racialModifiers: Record<string, Record<string, number>> = {
+      'Human': { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
+      'Elf': { str: 0, dex: 2, con: -2, int: 0, wis: 0, cha: 0 },
+      'Dwarf': { str: 0, dex: 0, con: 2, int: 0, wis: 0, cha: -2 },
+      'Halfling': { str: -2, dex: 2, con: 0, int: 0, wis: 0, cha: 0 },
+      'Half-Elf': { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 2 },
+      'Half-Orc': { str: 2, dex: 0, con: 0, int: -2, wis: 0, cha: -2 },
+      'Gnome': { str: -2, dex: 0, con: 2, int: 0, wis: 0, cha: 0 }
+    }
+    
+    return racialModifiers[raceName] || racialModifiers['Human']
+  }
+
+  /**
    * Logging utility
    */
   private log(message: string): void {
@@ -1005,6 +1150,6 @@ export class TableEngine {
 // Singleton instance for global use
 export const tableEngine = new TableEngine({
   validateTables: true,
-  enableLogging: false,
+  enableLogging: true,  // Temporarily enabled to debug racial modifiers
   maxRecursionDepth: 10
 })

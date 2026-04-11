@@ -2,10 +2,12 @@
 import { useState } from 'react'
 import { GenerationWizard } from './components/wizard/GenerationWizard'
 import { CharacterManager } from './components/character/CharacterManager'
+import { DNDCharacterSheet } from './components/dnd/DNDCharacterSheet'
 import { ErrorBoundary } from './components/ui'
+import { IntegrationDemo } from './components/IntegrationDemo'
 
 function App() {
-  const [currentView, setCurrentView] = useState<'landing' | 'generate' | 'manage'>('landing')
+  const [currentView, setCurrentView] = useState<'landing' | 'generate' | 'manage' | 'demo' | 'dnd-sheet'>('landing')
 
   const handleStartGeneration = () => {
     setCurrentView('generate')
@@ -21,6 +23,14 @@ function App() {
 
   const handleBackToLanding = () => {
     setCurrentView('landing')
+  }
+
+  const handleShowDemo = () => {
+    setCurrentView('demo')
+  }
+
+  const handleShowDnDSheet = () => {
+    setCurrentView('dnd-sheet')
   }
 
   if (currentView === 'generate') {
@@ -65,6 +75,60 @@ function App() {
     )
   }
 
+  if (currentView === 'demo') {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gradient-to-br from-parchment-50 to-parchment-100">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-medieval-800">
+                PanCasting - Balanced Modifier System Demo
+              </h1>
+              <button 
+                onClick={handleBackToLanding}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Back to Home
+              </button>
+            </div>
+            <IntegrationDemo />
+          </div>
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
+  if (currentView === 'dnd-sheet') {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gradient-to-br from-parchment-50 to-parchment-100">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-medieval-800">
+                ⚔️ D&D 3.5 Character Sheet
+              </h1>
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleStartGeneration}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                >
+                  Add Background Story
+                </button>
+                <button 
+                  onClick={handleBackToLanding}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Back to Home
+                </button>
+              </div>
+            </div>
+            <DNDCharacterSheet />
+          </div>
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
   // Landing page
   return (
     <ErrorBoundary>
@@ -90,10 +154,17 @@ function App() {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button 
+                  onClick={handleShowDnDSheet}
+                  className="px-8 py-3 bg-red-600 text-white rounded-lg text-lg font-medium hover:bg-red-700 transition-colors"
+                >
+                  ⚔️ D&D Character Sheet
+                </button>
+                
+                <button 
                   onClick={handleStartGeneration}
                   className="px-8 py-3 bg-amber-600 text-white rounded-lg text-lg font-medium hover:bg-amber-700 transition-colors"
                 >
-                  🎭 Start Character Generation
+                  🎭 Generate Background Story
                 </button>
                 
                 <button 
@@ -101,6 +172,13 @@ function App() {
                   className="px-8 py-3 bg-blue-600 text-white rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors"
                 >
                   📚 Manage Characters
+                </button>
+
+                <button 
+                  onClick={handleShowDemo}
+                  className="px-8 py-3 bg-green-600 text-white rounded-lg text-lg font-medium hover:bg-green-700 transition-colors"
+                >
+                  🎲 Balanced Modifier Demo
                 </button>
               </div>
             </div>

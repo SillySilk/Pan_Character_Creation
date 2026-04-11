@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { tableService } from '../../../services/tableService'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { TableProcessingResult, PersonalityTable as PersonalityTableType } from '../../../types/tables'
 
@@ -23,32 +22,26 @@ export function PersonalityTable({ tableId, onComplete }: PersonalityTableProps)
 
   // Load table data
   useEffect(() => {
-    const loadTable = async () => {
-      try {
-        console.log('🟡 PersonalityTable: Loading table ID:', tableId)
-        const tableData = await tableService.getTable(tableId)
-        console.log('🟡 PersonalityTable: Loaded table:', tableData)
-        
-        if (tableData && tableData.category === 'personality') {
-          setTable(tableData as PersonalityTableType)
-          // Register the table with the engine
-          tableEngine.registerTable(tableData)
-          console.log('✅ PersonalityTable: Table set successfully:', tableData.name)
-        } else {
-          console.error('❌ PersonalityTable: Table not found or wrong category:', { 
-            tableData, 
-            expectedCategory: 'personality',
-            tableCategory: tableData?.category 
-          })
-          setError(`Table ${tableId} not found or not a personality table`)
-        }
-      } catch (err) {
-        console.error('❌ PersonalityTable: Failed to load table:', err)
-        setError(`Failed to load table ${tableId}: ${err}`)
+    try {
+      console.log('🟡 PersonalityTable: Loading table ID:', tableId)
+      const tableData = tableEngine.getTable(tableId)
+      console.log('🟡 PersonalityTable: Loaded table:', tableData)
+      
+      if (tableData && tableData.category === 'personality') {
+        setTable(tableData as PersonalityTableType)
+        console.log('✅ PersonalityTable: Table set successfully:', tableData.name)
+      } else {
+        console.error('❌ PersonalityTable: Table not found or wrong category:', { 
+          tableData, 
+          expectedCategory: 'personality',
+          tableCategory: tableData?.category 
+        })
+        setError(`Table ${tableId} not found or not a personality table`)
       }
+    } catch (err) {
+      console.error('❌ PersonalityTable: Failed to load table:', err)
+      setError(`Failed to load table ${tableId}: ${err}`)
     }
-
-    loadTable()
   }, [tableId, tableEngine])
 
   const handleRoll = async (rollValue?: number) => {

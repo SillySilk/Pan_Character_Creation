@@ -43,7 +43,7 @@ export function CharacterCard({
 
   const getTotalSkills = () => {
     if (!character.skills) return 0
-    return character.skills.length
+    return Object.keys(character.skills).length
   }
 
   const getPersonalityTraitsCount = (traits: PersonalityTraits): number => {

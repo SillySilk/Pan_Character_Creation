@@ -849,11 +849,83 @@ export const unusualEventsTable: Table = {
   ]
 }
 
+// Table 626: Strange Encounter
+export const strangeEncounterTable: Table = {
+  id: '626',
+  name: 'Strange Encounter',
+  category: 'miscellaneous',
+  diceType: 'd100',
+  instructions: 'Roll d100 for strange encounter',
+  entries: [
+    {
+      id: '626_01',
+      rollRange: [1, 10],
+      result: 'Mysterious Stranger',
+      description: 'Met someone who spoke in riddles and vanished'
+    },
+    {
+      id: '626_02',
+      rollRange: [11, 20],
+      result: 'Talking Animal',
+      description: 'Encountered a speaking creature that gave cryptic advice'
+    },
+    {
+      id: '626_03',
+      rollRange: [21, 30],
+      result: 'Time Distortion',
+      description: 'Experienced missing time or temporal anomaly'
+    },
+    {
+      id: '626_04',
+      rollRange: [31, 40],
+      result: 'Ghost Sighting',
+      description: 'Witnessed a clear apparition of the deceased'
+    },
+    {
+      id: '626_05',
+      rollRange: [41, 50],
+      result: 'Prophetic Dreams',
+      description: 'Had vivid dreams that later proved true'
+    },
+    {
+      id: '626_06',
+      rollRange: [51, 60],
+      result: 'Fey Encounter',
+      description: 'Met beings from the otherworld who played tricks'
+    },
+    {
+      id: '626_07',
+      rollRange: [61, 70],
+      result: 'Magic Gone Wrong',
+      description: 'Witnessed or caused a magical mishap with lasting effects'
+    },
+    {
+      id: '626_08',
+      rollRange: [71, 80],
+      result: 'Portal Discovery',
+      description: 'Found a gateway to another realm (now closed)'
+    },
+    {
+      id: '626_09',
+      rollRange: [81, 90],
+      result: 'Divine Intervention',
+      description: 'Experienced clear supernatural intervention in crisis'
+    },
+    {
+      id: '626_10',
+      rollRange: [91, 100],
+      result: 'Reality Shift',
+      description: 'World briefly changed around you before returning to normal'
+    }
+  ]
+}
+
 // Export all miscellaneous tables
 export const miscellaneousTables: Table[] = [
   religiousEventsTable,
   tragedyTable,
   somethingWonderfulTable,
+  strangeEncounterTable,
   elvenEventsTable,
   dwarvenEventsTable,
   halflingEventsTable,

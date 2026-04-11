@@ -5,7 +5,6 @@ import { OccupationTable as OccupationTableType } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
-import { tableService } from '../../../services/tableService'
 import type { DiceRoll } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
 
@@ -31,28 +30,15 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
   const tableEngine = getGlobalTableEngine()
 
   useEffect(() => {
-    loadTable()
-  }, [tableId])
-
-  const loadTable = async () => {
     try {
       setLoading(true)
       console.log('🟡 OccupationTable: Loading table ID:', tableId)
-      const loadedTable = await tableService.getTable(tableId)
+      const loadedTable = tableEngine.getTable(tableId)
       console.log('🟡 OccupationTable: Loaded table:', loadedTable)
-      console.log('🟡 OccupationTable: Table details:', {
-        found: !!loadedTable,
-        category: loadedTable?.category,
-        name: loadedTable?.name,
-        entriesCount: loadedTable?.entries?.length
-      })
       
       if (loadedTable && loadedTable.category === 'occupations') {
         setTable(loadedTable as OccupationTableType)
-        // Register the table with the engine
-        tableEngine.registerTable(loadedTable)
         console.log('✅ OccupationTable: Table set successfully:', loadedTable.name)
-        console.log('✅ OccupationTable: Table registered with engine:', loadedTable.id)
       } else {
         console.error('❌ OccupationTable: Table not found or wrong category:', { 
           loadedTable: !!loadedTable, 
@@ -66,7 +52,7 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
     } finally {
       setLoading(false)
     }
-  }
+  }, [tableId, tableEngine])
 
   const handleRoll = async () => {
     if (!table) return

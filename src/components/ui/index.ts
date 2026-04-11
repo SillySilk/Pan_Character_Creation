@@ -25,3 +25,26 @@ export { CharacterPreview, type CharacterPreviewProps } from './CharacterPreview
 export { LoadingSpinner } from './LoadingSpinner'
 export { ErrorBoundary } from './ErrorBoundary'
 export { Toast, useToast } from './Toast'
+export { Alert, AlertTitle, AlertDescription } from './Alert'
+
+// Balanced Modifier System Components
+export { 
+  ModifierEffect,
+  ModifierSource,
+  ModifierSummaryDisplay,
+  BalanceIndicator,
+  CharacterModifiersView
+} from './ModifierDisplay'
+
+export {
+  TradeoffPreview,
+  CompactTradeoffSummary,
+  BalanceIndicatorBadge
+} from './TradeoffPreview'
+
+export {
+  BalanceWarningSystem,
+  RealTimeBalanceTracker
+} from './BalanceWarning'
+
+export { ModifierSystemDemo } from './ModifierSystemDemo'

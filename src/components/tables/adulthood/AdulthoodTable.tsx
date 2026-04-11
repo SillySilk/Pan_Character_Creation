@@ -5,7 +5,6 @@ import { AdulthoodTable as AdulthoodTableType } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
-import { tableService } from '../../../services/tableService'
 import type { DiceRoll } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
 
@@ -30,44 +29,29 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
   const tableEngine = getGlobalTableEngine()
 
   useEffect(() => {
-    loadTable()
-  }, [tableId])
-
-  const loadTable = async () => {
     try {
       setLoading(true)
       console.log('🟡 AdulthoodTable: Loading table ID:', tableId)
-      console.log('🟡 AdulthoodTable: TableService instance:', tableService)
-      console.log('🟡 AdulthoodTable: TableService.getTable method:', typeof tableService.getTable)
       
-      const loadedTable = await tableService.getTable(tableId)
+      const loadedTable = tableEngine.getTable(tableId)
       console.log('🟡 AdulthoodTable: Loaded table:', loadedTable)
       
       if (loadedTable && loadedTable.category === 'adulthood') {
         setTable(loadedTable as AdulthoodTableType)
-        // Register the table with the engine
-        tableEngine.registerTable(loadedTable)
         console.log('✅ AdulthoodTable: Table set successfully:', loadedTable.name)
-        console.log('✅ AdulthoodTable: Table registered with engine:', loadedTable.id)
       } else {
         console.error('❌ AdulthoodTable: Table not found or wrong category:', { 
           loadedTable, 
           expectedCategory: 'adulthood',
-          tableCategory: loadedTable?.category,
-          tableId: loadedTable?.id 
+          tableCategory: loadedTable?.category 
         })
       }
     } catch (error) {
       console.error('❌ AdulthoodTable: Failed to load adulthood table:', error)
-      console.error('❌ AdulthoodTable: Error details:', {
-        tableId,
-        errorMessage: error.message,
-        errorStack: error.stack
-      })
     } finally {
       setLoading(false)
     }
-  }
+  }, [tableId, tableEngine])
 
   const handleRoll = async () => {
     if (!table) return

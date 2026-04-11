@@ -23,6 +23,8 @@ export interface Event {
   significance: 'Minor' | 'Major' | 'Critical' | 'Life_Changing'
   resolution?: string
   ongoing?: boolean
+  // Additional property referenced in components
+  result?: string
 }
 
 export interface EventEffect {

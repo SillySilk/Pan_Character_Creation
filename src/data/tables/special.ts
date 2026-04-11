@@ -403,8 +403,212 @@ export const unusualObjectsTable: SpecialTable = {
   ]
 }
 
+// Table 803: Divine Artifacts
+export const divineArtifactsTable: SpecialTable = {
+  id: '803',
+  name: 'Divine Artifacts',
+  category: 'special',
+  diceType: 'd100',
+  itemType: 'divine',
+  valuationRequired: false,
+  instructions: 'Roll d100 for divine or legendary artifact',
+  entries: [
+    {
+      id: '803_01',
+      rollRange: [1, 10],
+      result: 'Blessed Weapon',
+      description: 'Weapon consecrated by divine power',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Blessed Weapon',
+            type: 'Divine Weapon',
+            properties: ['Holy', 'Enhanced vs Evil'],
+            blessing: 'Divine Consecration',
+            power: 'High'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_02',
+      rollRange: [11, 20],
+      result: 'Sacred Chalice',
+      description: 'Holy vessel with healing properties',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Sacred Chalice',
+            type: 'Divine Vessel',
+            properties: ['Healing', 'Purification'],
+            blessing: 'Divine Grace',
+            power: 'Moderate'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_03',
+      rollRange: [21, 30],
+      result: 'Prophet\'s Staff',
+      description: 'Rod wielded by ancient prophet',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Prophet\'s Staff',
+            type: 'Divine Rod',
+            properties: ['Wisdom', 'Divine Command'],
+            blessing: 'Prophetic Vision',
+            power: 'Very High'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_04',
+      rollRange: [31, 40],
+      result: 'Angel\'s Feather',
+      description: 'Plume from celestial being\'s wing',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Angel\'s Feather',
+            type: 'Divine Relic',
+            properties: ['Flight', 'Protection'],
+            blessing: 'Celestial Grace',
+            power: 'Moderate'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_05',
+      rollRange: [41, 50],
+      result: 'Divine Shield',
+      description: 'Protective aegis blessed by gods',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Divine Shield',
+            type: 'Divine Armor',
+            properties: ['Divine Protection', 'Spell Turning'],
+            blessing: 'Divine Aegis',
+            power: 'High'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_06',
+      rollRange: [51, 60],
+      result: 'Holy Symbol of Power',
+      description: 'Religious icon with manifest divine presence',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Holy Symbol of Power',
+            type: 'Divine Focus',
+            properties: ['Divine Power', 'Turn Undead'],
+            blessing: 'Divine Presence',
+            power: 'High'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_07',
+      rollRange: [61, 70],
+      result: 'Tears of the Divine',
+      description: 'Crystallized sorrow of a deity',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Divine Tears',
+            type: 'Divine Crystal',
+            properties: ['Resurrection', 'Divine Sorrow'],
+            blessing: 'Ultimate Sacrifice',
+            power: 'Legendary'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_08',
+      rollRange: [71, 80],
+      result: 'Scroll of Divine Law',
+      description: 'Sacred text written by divine hand',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Divine Scroll',
+            type: 'Divine Text',
+            properties: ['Divine Knowledge', 'Binding Law'],
+            blessing: 'Divine Wisdom',
+            power: 'Very High'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_09',
+      rollRange: [81, 90],
+      result: 'Crown of Divine Right',
+      description: 'Regalia that grants legitimate rule',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Divine Crown',
+            type: 'Divine Regalia',
+            properties: ['Divine Authority', 'Rightful Rule'],
+            blessing: 'Divine Mandate',
+            power: 'Legendary'
+          }
+        }
+      ]
+    },
+    {
+      id: '803_10',
+      rollRange: [91, 100],
+      result: 'Fragment of Creation',
+      description: 'Piece of the original divine creation',
+      effects: [
+        {
+          type: 'item',
+          target: 'divineItems',
+          value: {
+            name: 'Creation Fragment',
+            type: 'Primordial Relic',
+            properties: ['Reality Shaping', 'Pure Creation'],
+            blessing: 'Primordial Power',
+            power: 'Mythic'
+          }
+        }
+      ]
+    }
+  ]
+}
+
 // Export all special item tables
 export const specialTables: Table[] = [
   giftsLegaciesTable,
-  unusualObjectsTable
+  unusualObjectsTable,
+  divineArtifactsTable
 ]

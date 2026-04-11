@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
-import { tableService } from '../../../services/tableService'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { DiceRoll, Table } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
@@ -27,25 +26,16 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
   const tableEngine = getGlobalTableEngine()
 
   useEffect(() => {
-    loadTable()
-  }, [tableId])
-
-  const loadTable = async () => {
     try {
       setLoading(true)
       console.log('🟡 LifeDetailsTable: Loading table ID:', tableId)
-      console.log('🟡 LifeDetailsTable: TableService instance:', tableService)
-      console.log('🟡 LifeDetailsTable: TableService.getTable method:', typeof tableService.getTable)
       
-      const loadedTable = await tableService.getTable(tableId)
+      const loadedTable = tableEngine.getTable(tableId)
       console.log('🟡 LifeDetailsTable: Loaded table:', loadedTable)
       
       if (loadedTable) {
         setTable(loadedTable as Table)
-        // Register the table with the engine
-        tableEngine.registerTable(loadedTable)
         console.log('✅ LifeDetailsTable: Table set successfully:', loadedTable.name)
-        console.log('✅ LifeDetailsTable: Table registered with engine:', loadedTable.id)
       } else {
         console.error('❌ LifeDetailsTable: Table not found:', { 
           loadedTable, 
@@ -54,15 +44,10 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
       }
     } catch (error) {
       console.error('❌ LifeDetailsTable: Failed to load table:', error)
-      console.error('❌ LifeDetailsTable: Error details:', {
-        tableId,
-        errorMessage: error.message,
-        errorStack: error.stack
-      })
     } finally {
       setLoading(false)
     }
-  }
+  }, [tableId, tableEngine])
 
   const handleRoll = async () => {
     if (!table) return

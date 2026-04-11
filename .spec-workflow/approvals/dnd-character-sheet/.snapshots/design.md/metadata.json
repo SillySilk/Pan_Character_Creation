@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/dnd-character-sheet/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-30T04:00:18.655Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759204818649_omr3v8mre",
+      "approvalTitle": "D&D 3.5 Character Sheet Integration Design"
+    }
+  ]
+}

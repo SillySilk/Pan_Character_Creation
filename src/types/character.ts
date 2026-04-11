@@ -10,6 +10,28 @@ export interface Character {
   generationStep?: number
   lastModified?: Date
   
+  // D&D 3.5 Ability Scores (rolled at character creation)
+  strength?: number
+  dexterity?: number
+  constitution?: number
+  intelligence?: number
+  wisdom?: number
+  charisma?: number
+  
+  // D&D Class Selection
+  characterClass?: {
+    name: string
+    hitDie: string
+    skillPointsPerLevel: number
+    classSkills: string[]
+    primaryAbility: string
+    startingSkillRanks?: Record<string, number>
+  }
+  
+  // Finalization Status
+  isFinalized?: boolean
+  completedAt?: Date
+  
   // Heritage & Birth (100s)
   race: Race
   culture: Culture
@@ -26,7 +48,7 @@ export interface Character {
   occupations: Occupation[]
   apprenticeships: Apprenticeship[]
   hobbies: Hobby[]
-  skills: Skill[]
+  skills?: Skill[]
   
   // Personality (500s)
   values: Values
@@ -48,6 +70,10 @@ export interface Character {
   activeModifiers: Modifiers
   generationHistory: GenerationStep[]
   dndIntegration: DDStats
+  
+  // Balanced Modifier System
+  appliedModifiers?: AppliedModifier[]
+  modifierSummary?: ModifierSummary
 }
 
 // Heritage & Birth Types (100s)
@@ -100,6 +126,10 @@ export interface Family {
   relationships: Relationship[]
   notableFeatures: string[]
   socialConnections: string[]
+  // Additional properties referenced in components
+  siblings?: FamilyMember[]
+  parents?: FamilyMember[]
+  status?: string
 }
 
 export interface FamilyMember {
@@ -126,6 +156,8 @@ export interface Occupation {
   skills: Skill[]
   income?: string
   socialStatus?: string
+  // Additional property referenced in components
+  result?: string
 }
 
 export interface Apprenticeship {
@@ -146,6 +178,7 @@ export interface Skill {
   description?: string
   source: string // Where the skill was learned
   dndEquivalent?: string
+  specialty?: string // Skill specialty (e.g., "Weaponsmithing" for Craft skill)
 }
 
 export interface Hobby {
@@ -221,6 +254,22 @@ export interface GenerationStep {
   notes?: string
   skipped?: boolean
   manualSelection?: boolean
+  // Additional properties referenced in components
+  result?: string
+  step?: string
+  rollDetails?: {
+    naturalRoll: number
+    modifiers: number
+    finalRoll: number
+    breakdown: string
+  }
+  roll?: number
+  effects?: Array<{
+    type: string
+    target: string
+    value: any
+    description?: string
+  }>
 }
 
 // Utility Types
@@ -260,6 +309,8 @@ export interface Relationship {
   id: string
   person: NPC
   type: RelationshipType
+  // Additional property referenced in components
+  name?: string
 }
 
 export interface Gift {
@@ -279,3 +330,42 @@ export interface SpecialItem extends Gift {
 // Re-export DDStats from dnd.ts for full D&D integration
 import type { DDStats as DNDStats } from './dnd'
 export type DDStats = DNDStats
+
+// Balanced Modifier System Types
+export interface AppliedModifier {
+  sourceEvent: string
+  sourceTable: string
+  positive: BalancedModifier[]
+  negative: BalancedModifier[]
+  appliedAt: Date
+  tradeoffReason?: string
+}
+
+export interface BalancedModifier {
+  type: 'ability' | 'skill' | 'trait' | 'social' | 'special'
+  target: string
+  value: number | string
+  description: string
+  category: 'physical' | 'intellectual' | 'social' | 'psychological'
+}
+
+export interface ModifierSummary {
+  abilityScores: Record<string, number>
+  skills: Record<string, number>
+  traits: string[]
+  socialModifiers: SocialModifier[]
+  overallBalance: BalanceAssessment
+}
+
+export interface SocialModifier {
+  context: string
+  modifier: number
+  description: string
+}
+
+export interface BalanceAssessment {
+  totalPositive: number
+  totalNegative: number
+  netBalance: number
+  warnings: string[]
+}

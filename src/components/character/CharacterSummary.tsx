@@ -71,6 +71,11 @@ export function CharacterSummary({
   }
 
   const getSummaryStats = () => {
+    const getPersonalityTraitsCount = (traits: any) => {
+      if (!traits) return 0
+      return (traits.lightside?.length || 0) + (traits.neutral?.length || 0) + (traits.darkside?.length || 0) + (traits.exotic?.length || 0)
+    }
+
     return {
       totalEvents: (character.youthEvents?.length || 0) + (character.adulthoodEvents?.length || 0),
       occupations: character.occupations?.length || 0,
@@ -78,7 +83,7 @@ export function CharacterSummary({
       skills: character.skills ? Object.keys(character.skills).length : 0,
       hobbies: character.hobbies?.length || 0,
       relationships: (character.npcs?.length || 0) + (character.companions?.length || 0) + (character.rivals?.length || 0) + (character.relationships?.length || 0),
-      traits: character.personalityTraits?.length || 0
+      traits: getPersonalityTraitsCount(character.personalityTraits)
     }
   }
 
@@ -387,24 +392,36 @@ export function CharacterSummary({
       )}
 
       {/* Personality Traits */}
-      {character.personalityTraits && character.personalityTraits.length > 0 && (
-        <div className="p-4 bg-indigo-50 border-b border-amber-200">
-          <h3 className="font-semibold text-amber-800 mb-3">Personality</h3>
-          <div className="flex flex-wrap gap-2">
-            {character.personalityTraits.slice(0, showFullDetails ? undefined : 6).map((trait, index) => (
-              <div key={index} className="flex items-center gap-1 px-2 py-1 bg-white rounded border">
-                <span>{getPersonalityTraitIcon(trait.type)}</span>
-                <span className="text-sm font-medium">{trait.name}</span>
-              </div>
-            ))}
-            {!showFullDetails && character.personalityTraits.length > 6 && (
-              <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
-                +{character.personalityTraits.length - 6} more
-              </div>
-            )}
+      {(() => {
+        const getAllPersonalityTraits = (traits: any) => {
+          if (!traits) return []
+          return [
+            ...(traits.lightside || []),
+            ...(traits.neutral || []),
+            ...(traits.darkside || []),
+            ...(traits.exotic || [])
+          ]
+        }
+        const allTraits = getAllPersonalityTraits(character.personalityTraits)
+        return allTraits.length > 0 && (
+          <div className="p-4 bg-indigo-50 border-b border-amber-200">
+            <h3 className="font-semibold text-amber-800 mb-3">Personality</h3>
+            <div className="flex flex-wrap gap-2">
+              {allTraits.slice(0, showFullDetails ? undefined : 6).map((trait: any, index: number) => (
+                <div key={index} className="flex items-center gap-1 px-2 py-1 bg-white rounded border">
+                  <span>{getPersonalityTraitIcon(trait.type)}</span>
+                  <span className="text-sm font-medium">{trait.name}</span>
+                </div>
+              ))}
+              {!showFullDetails && allTraits.length > 6 && (
+                <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
+                  +{allTraits.length - 6} more
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Skills */}
       {character.skills && Object.keys(character.skills).length > 0 && (

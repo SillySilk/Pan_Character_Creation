@@ -4,11 +4,12 @@
 import React, { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import type { Character } from '../../types/character'
-import { DND35_SKILLS, calculateSkillModifier, type DnDSkill } from '../../data/dnd35Skills'
+import { DND_CORE_SKILLS, calculateSkillBonus, getAbilityModifier } from '../../data/dndSkills'
 
 interface ComprehensiveCharacterSheetProps {
   className?: string
   collapsible?: boolean
+  currentStep?: 'welcome' | 'heritage' | 'youth' | 'occupations' | 'adulthood' | 'personality' | 'complete'
 }
 
 interface CharacterSheetField {
@@ -26,7 +27,8 @@ interface CharacterSheetSection {
 
 export function ComprehensiveCharacterSheet({ 
   className = '', 
-  collapsible = false 
+  collapsible = false,
+  currentStep = 'complete'
 }: ComprehensiveCharacterSheetProps) {
   const { character, updateCharacter } = useCharacterStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -43,39 +45,48 @@ export function ComprehensiveCharacterSheet({
 
   // Helper to get racial modifiers for an ability
   const getRacialModifiers = (ability: string): number => {
-    if (!character?.race) return 0
+    if (!character?.race?.modifiers) return 0
     
-    // This would need to be expanded to parse racial effects from the race data
-    // For now, hardcode some common D&D racial modifiers for demonstration
-    const racialBonuses: Record<string, Record<string, number>> = {
-      'Elf': { dexterity: 2, constitution: -2 },
-      'Dwarf': { constitution: 2, dexterity: -2 },
-      'Halfling': { dexterity: 2, strength: -2 },
-      'Half-Orc': { strength: 2, intelligence: -2, charisma: -2 }
+    // Parse racial modifiers from the race's modifiers object
+    const modifiers = character.race.modifiers
+    
+    // Map ability names to modifier property names
+    const abilityMap: Record<string, keyof typeof modifiers> = {
+      'strength': 'str',
+      'dexterity': 'dex', 
+      'constitution': 'con',
+      'intelligence': 'int',
+      'wisdom': 'wis',
+      'charisma': 'cha'
     }
     
-    return racialBonuses[character.race.name]?.[ability] || 0
+    const modifierKey = abilityMap[ability]
+    return (modifiers[modifierKey] as number) || 0
   }
 
-  // Helper to format ability scores with modifiers breakdown
+  // Helper to format ability scores - show raw scores initially, modifiers only after racial/background effects
   const formatAbilityScore = (baseScore: number | undefined, ability: string) => {
     const base = baseScore || 0
-    const racialMod = getRacialModifiers(ability)
-    const total = base + racialMod
     
-    if (total === 0 && racialMod === 0) {
-      return '0 (-5)'
+    if (base === 0) {
+      return 'Not rolled yet'
     }
     
+    const racialMod = getRacialModifiers(ability)
+    const hasRace = character?.race?.name
+    
+    // If no race selected yet, just show the raw score
+    if (!hasRace || racialMod === 0) {
+      return `${base}`
+    }
+    
+    // If race is selected and has modifiers, show the breakdown
+    const total = base + racialMod
     const modifier = Math.floor((total - 10) / 2)
     const modifierText = `${modifier >= 0 ? '+' : ''}${modifier}`
+    const racialText = `${racialMod >= 0 ? '+' : ''}${racialMod}`
     
-    if (racialMod !== 0) {
-      const racialText = `${racialMod >= 0 ? '+' : ''}${racialMod}`
-      return `${total} (${modifierText}) [base ${base} ${racialText} racial]`
-    } else {
-      return `${total} (${modifierText})`
-    }
+    return `${total} (${modifierText}) [${base}${racialText} racial]`
   }
 
   // Helper to get status color
@@ -123,14 +134,15 @@ export function ComprehensiveCharacterSheet({
   })
 
   // Helper to get character's skill ranks (from character data)
-  const getSkillRanks = (): Record<string, number> => {
-    // This would be expanded based on character.skills array structure
-    // For now, return empty object until skills are properly implemented
-    return {}
+  const getSkillRanks = (skillName: string): number => {
+    if (!character?.skills) return 0
+    const skill = character.skills.find(s => s.name === skillName)
+    return skill?.rank || 0
   }
 
-  // Character sheet sections with all expected fields (reorganized with abilities first)
-  const sections = [
+  // Helper to determine which sections to show based on current step
+  const getSectionsForStep = () => {
+    const allSections = [
     {
       title: '📊 Ability Scores',
       fields: [
@@ -176,17 +188,17 @@ export function ComprehensiveCharacterSheet({
         },
         { 
           label: 'Culture', 
-          value: character?.culture?.name || 'Upcoming',
+          value: character?.culture?.name || 'Unknown',
           status: getFieldStatus(character?.culture?.name)
         },
         { 
           label: 'Social Status', 
-          value: character?.socialStatus?.level || 'Upcoming',
+          value: character?.socialStatus?.level || 'Heritage step',
           status: getFieldStatus(character?.socialStatus?.level)
         },
         { 
           label: 'Birth Circumstances', 
-          value: character?.birthCircumstances?.legitimacy || 'Upcoming',
+          value: character?.birthCircumstances?.legitimacy || 'Heritage step',
           status: getFieldStatus(character?.birthCircumstances?.legitimacy)
         }
       ]
@@ -196,28 +208,100 @@ export function ComprehensiveCharacterSheet({
       fields: [
         { 
           label: 'Childhood Events', 
-          value: character?.youthEvents?.filter(e => e.period === 'Childhood')?.map(e => e.name || e.result).join(', ') || 'Upcoming',
+          value: character?.youthEvents?.filter(e => e.period === 'Childhood')?.map(e => e.name || e.result).join(', ') || 'Generated during Youth step',
           status: getFieldStatus(character?.youthEvents?.filter(e => e.period === 'Childhood'))
         },
         { 
           label: 'Adolescent Events', 
-          value: character?.youthEvents?.filter(e => e.period === 'Adolescence')?.map(e => e.name || e.result).join(', ') || 'Upcoming',
+          value: character?.youthEvents?.filter(e => e.period === 'Adolescence')?.map(e => e.name || e.result).join(', ') || 'Generated during Youth step',
           status: getFieldStatus(character?.youthEvents?.filter(e => e.period === 'Adolescence'))
         }
       ]
     },
     {
+      title: '⚔️ D&D Class & Combat',
+      fields: [
+        { 
+          label: 'Class', 
+          value: character?.characterClass?.name || 'Class not selected',
+          status: getFieldStatus(character?.characterClass?.name)
+        },
+        { 
+          label: 'Level', 
+          value: character?.level ? `Level ${character.level}` : 'Not set',
+          status: getFieldStatus(character?.level)
+        },
+        { 
+          label: 'Hit Die', 
+          value: character?.characterClass?.hitDie || 'Class not selected',
+          status: getFieldStatus(character?.characterClass?.hitDie)
+        },
+        { 
+          label: 'Primary Ability', 
+          value: character?.characterClass?.primaryAbility || 'Class not selected',
+          status: getFieldStatus(character?.characterClass?.primaryAbility)
+        },
+        { 
+          label: 'Skill Points/Level', 
+          value: character?.characterClass ? `${character.characterClass.skillPointsPerLevel} + Int mod` : 'Class not selected',
+          status: getFieldStatus(character?.characterClass?.skillPointsPerLevel)
+        },
+        { 
+          label: 'Class Skills', 
+          value: character?.characterClass ? `${character.characterClass.classSkills.length} skills` : 'Class not selected',
+          status: getFieldStatus(character?.characterClass?.classSkills)
+        }
+      ]
+    },
+    {
       title: '🎯 D&D 3.5 Skills',
-      fields: DND35_SKILLS.map(skill => {
+      fields: DND_CORE_SKILLS.map(skill => {
         const abilityScores = getAbilityScores()
-        const skillRanks = getSkillRanks()
-        const totalModifier = calculateSkillModifier(skill.name, abilityScores, skillRanks)
-        const hasRanks = skillRanks[skill.name] > 0
+        const skillRanks = getSkillRanks(skill.name)
+        const hasRanks = skillRanks > 0
+        const hasAnyAbilityScores = Object.values(abilityScores).some(score => score > 0)
+        
+        if (!hasAnyAbilityScores) {
+          return {
+            label: `${skill.name} (${skill.keyAbility.charAt(0).toUpperCase() + skill.keyAbility.slice(1, 3)})`,
+            value: 'Roll ability scores first',
+            status: 'empty' as const,
+            description: skill.description
+          }
+        }
+        
+        // Get ability score for this skill
+        const getAbilityScore = (ability: string): number => {
+          switch (ability.toLowerCase()) {
+            case 'strength': return abilityScores.strength
+            case 'dexterity': return abilityScores.dexterity
+            case 'constitution': return abilityScores.constitution
+            case 'intelligence': return abilityScores.intelligence
+            case 'wisdom': return abilityScores.wisdom
+            case 'charisma': return abilityScores.charisma
+            default: return 10
+          }
+        }
+        
+        const abilityScore = getAbilityScore(skill.keyAbility)
+        const isClassSkill = character?.characterClass?.classSkills.includes(skill.name) || false
+        
+        if (!hasRanks && skill.trainedOnly) {
+          return {
+            label: `${skill.name} (${skill.keyAbility.charAt(0).toUpperCase() + skill.keyAbility.slice(1, 3)})`,
+            value: 'Cannot use untrained',
+            status: 'empty' as const,
+            description: skill.description
+          }
+        }
+        
+        const skillCalc = calculateSkillBonus(skill, skillRanks, abilityScore, isClassSkill)
+        const displayRanks = skillRanks > 0 ? `${skillRanks} ranks` : 'untrained'
         
         return {
-          label: `${skill.name} (${skill.ability.charAt(0).toUpperCase() + skill.ability.slice(1, 3)})`,
-          value: `${totalModifier >= 0 ? '+' : ''}${totalModifier}`,
-          status: hasRanks ? 'filled' : 'empty' as const,
+          label: `${skill.name} (${skill.keyAbility.charAt(0).toUpperCase() + skill.keyAbility.slice(1, 3)})${isClassSkill ? ' ✓' : ''}`,
+          value: `${skillCalc.total >= 0 ? '+' : ''}${skillCalc.total} (${displayRanks})`,
+          status: hasRanks ? 'filled' as const : 'empty' as const,
           description: skill.description
         }
       }),
@@ -228,17 +312,17 @@ export function ComprehensiveCharacterSheet({
       fields: [
         { 
           label: 'Apprenticeship', 
-          value: character?.occupations?.find(occ => occ.type === 'apprenticeship')?.result || 'Upcoming',
+          value: character?.occupations?.find(occ => occ.type === 'apprenticeship')?.result || 'Generated during Professional Training',
           status: getFieldStatus(character?.occupations?.find(occ => occ.type === 'apprenticeship'))
         },
         { 
           label: 'Profession', 
-          value: character?.occupations?.find(occ => occ.type === 'civilized')?.result || 'Upcoming',
+          value: character?.occupations?.find(occ => occ.type === 'civilized')?.result || 'Generated during Professional Training',
           status: getFieldStatus(character?.occupations?.find(occ => occ.type === 'civilized'))
         },
         { 
           label: 'Hobbies', 
-          value: character?.occupations?.filter(occ => occ.type === 'hobby')?.map(h => h.result).join(', ') || 'Upcoming',
+          value: character?.occupations?.filter(occ => occ.type === 'hobby')?.map(h => h.result).join(', ') || 'Generated during Professional Training',
           status: getFieldStatus(character?.occupations?.filter(occ => occ.type === 'hobby'))
         }
       ]
@@ -248,7 +332,7 @@ export function ComprehensiveCharacterSheet({
       fields: [
         { 
           label: 'Adulthood Events', 
-          value: character?.adulthoodEvents?.length ? `${character.adulthoodEvents.length} experienced` : 'Upcoming',
+          value: character?.adulthoodEvents?.length ? `${character.adulthoodEvents.length} experienced` : 'Generated during Life Experience step',
           status: getFieldStatus(character?.adulthoodEvents)
         },
         { 
@@ -267,12 +351,12 @@ export function ComprehensiveCharacterSheet({
             `${(character.personalityTraits.lightside?.length || 0) +
             (character.personalityTraits.neutral?.length || 0) +
             (character.personalityTraits.darkside?.length || 0) +
-            (character.personalityTraits.exotic?.length || 0)} traits` : 'Upcoming',
+            (character.personalityTraits.exotic?.length || 0)} traits` : 'Generated during Core Identity step',
           status: getFieldStatus(character?.personalityTraits)
         },
         { 
           label: 'Alignment', 
-          value: character?.alignment?.primary || 'Upcoming',
+          value: character?.alignment?.primary || 'Generated during Core Identity step',
           status: getFieldStatus(character?.alignment?.primary)
         }
       ]
@@ -323,6 +407,12 @@ export function ComprehensiveCharacterSheet({
       ]
     }
   ]
+
+    // Return sections based on current step
+    return allSections
+  }
+
+  const sections = getSectionsForStep()
 
   if (collapsible && isCollapsed) {
     return (
@@ -414,11 +504,11 @@ export function ComprehensiveCharacterSheet({
                 {section.fields.map((field, fieldIndex) => (
                   <div 
                     key={fieldIndex}
-                    className={`flex items-center justify-between px-2 py-1 rounded border ${getStatusColor(field.status)}`}
+                    className={`flex items-center justify-between px-2 py-1 rounded border ${getStatusColor(field.status)} min-h-[28px]`}
                     title={field.description || ''}
                   >
-                    <span className="text-sm font-medium">{field.label}:</span>
-                    <span className="text-sm font-mono">{field.value}</span>
+                    <span className="text-sm font-medium flex-shrink-0 mr-2">{field.label}:</span>
+                    <span className="text-sm font-mono text-right break-words overflow-hidden">{field.value}</span>
                   </div>
                 ))}
               </div>

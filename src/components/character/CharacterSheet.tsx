@@ -1,6 +1,6 @@
 // Detailed Character Sheet Component for PanCasting
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Character } from '../../types/character'
 import { useCharacterStore } from '../../stores/characterStore'
 
@@ -17,10 +17,14 @@ export function CharacterSheet({
   onSave,
   className = '' 
 }: CharacterSheetProps) {
-  const { character: storeCharacter, updateCharacter } = useCharacterStore()
+  const { character: storeCharacter } = useCharacterStore()
   const character = propCharacter || storeCharacter
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'history' | 'export'>('overview')
+  // Suppress unused variable warnings
+  void editable
+  void onSave
+  
+  const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'modifiers' | 'history' | 'export'>('overview')
 
   if (!character) {
     return (
@@ -57,6 +61,7 @@ export function CharacterSheet({
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📋' },
     { id: 'details', label: 'Details', icon: '📊' },
+    { id: 'modifiers', label: 'Modifiers', icon: '⚖️' },
     { id: 'history', label: 'Life History', icon: '📚' },
     { id: 'export', label: 'Export', icon: '📤' }
   ]
@@ -188,24 +193,38 @@ export function CharacterSheet({
             )}
 
             {/* Personality Traits */}
-            {character.personalityTraits && character.personalityTraits.length > 0 && (
-              <div className="bg-indigo-50 rounded-lg p-4">
-                <h2 className="text-lg font-bold text-gray-800 mb-4">Personality Traits</h2>
-                <div className="grid md:grid-cols-2 gap-3">
-                  {character.personalityTraits.map((trait, index) => (
-                    <div key={index} className="bg-white rounded-lg p-3 border flex items-center gap-3">
-                      <span className="text-2xl">{getPersonalityTraitIcon(trait.type)}</span>
-                      <div>
-                        <div className="font-medium text-gray-800">{trait.name}</div>
-                        <div className="text-sm text-gray-600">{trait.type}</div>
-                        {trait.description && (
-                          <div className="text-xs text-gray-500 mt-1">{trait.description}</div>
-                        )}
-                      </div>
+            {character.personalityTraits && (
+              (() => {
+                const allTraits = [
+                  ...(character.personalityTraits.lightside || []),
+                  ...(character.personalityTraits.neutral || []),
+                  ...(character.personalityTraits.darkside || []),
+                  ...(character.personalityTraits.exotic || [])
+                ]
+                return allTraits.length > 0 && (
+                  <div className="bg-indigo-50 rounded-lg p-4">
+                    <h2 className="text-lg font-bold text-gray-800 mb-4">Personality Traits</h2>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      {allTraits.map((trait, index) => (
+                        <div key={index} className="bg-white rounded-lg p-3 border flex items-center gap-3">
+                          <span className="text-2xl">{getPersonalityTraitIcon(
+                            ('type' in trait ? trait.type : trait.category) || 'Neutral'
+                          )}</span>
+                          <div>
+                            <div className="font-medium text-gray-800">{trait.name}</div>
+                            <div className="text-sm text-gray-600">
+                              {'type' in trait ? trait.type : trait.category || 'Neutral'}
+                            </div>
+                            {trait.description && (
+                              <div className="text-xs text-gray-500 mt-1">{trait.description}</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )
+              })()
             )}
           </div>
         )}
@@ -223,18 +242,20 @@ export function CharacterSheet({
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="font-semibold text-green-800">
-                            {occupation.name || occupation.result || 'Unknown Occupation'}
+                            {occupation.name || 'Unknown Occupation'}
                           </h3>
                           {occupation.type && (
                             <div className="text-sm text-green-600 capitalize">{occupation.type}</div>
                           )}
-                          {occupation.description && (
-                            <div className="text-sm text-gray-600 mt-2">{occupation.description}</div>
+                          {occupation.achievements && occupation.achievements.length > 0 && (
+                            <div className="text-sm text-gray-600 mt-2">
+                              Achievements: {occupation.achievements.join(', ')}
+                            </div>
                           )}
                         </div>
-                        {occupation.effects && (
+                        {occupation.skills && occupation.skills.length > 0 && (
                           <div className="text-xs text-green-700">
-                            {occupation.effects.filter(e => e.type === 'skill').length} skills gained
+                            {occupation.skills.length} skills gained
                           </div>
                         )}
                       </div>
@@ -252,14 +273,14 @@ export function CharacterSheet({
                   {character.relationships.map((relationship, index) => (
                     <div key={index} className="bg-white rounded-lg p-3 border border-pink-200">
                       <div className="font-medium text-pink-800">
-                        {relationship.name || 'Unknown Contact'}
+                        {relationship.person.name || 'Unknown Contact'}
                       </div>
                       {relationship.type && (
                         <div className="text-sm text-pink-600">{relationship.type}</div>
                       )}
-                      {relationship.relationship && (
-                        <div className="text-xs text-gray-600 mt-1">{relationship.relationship}</div>
-                      )}
+                      <div className="text-xs text-gray-600 mt-1">
+                        {relationship.person.type} - {relationship.type} relationship
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -281,13 +302,10 @@ export function CharacterSheet({
                           {item.type && (
                             <div className="text-sm text-yellow-600">{item.type}</div>
                           )}
-                          {item.description && (
-                            <div className="text-sm text-gray-600 mt-1">{item.description}</div>
-                          )}
                         </div>
-                        {item.quality && (
+                        {item.rarity && (
                           <div className="text-xs text-yellow-700 italic">
-                            {item.quality}
+                            {item.rarity}
                           </div>
                         )}
                       </div>

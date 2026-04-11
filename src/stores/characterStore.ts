@@ -25,10 +25,15 @@ import type {
   SpecialItem,
   Modifiers,
   GenerationStep,
+  ModifierSummary,
+  BalanceAssessment,
 } from '@/types/character'
 import type { DDStats, SkillBonuses, BackgroundFeature, Item } from '@/types/dnd'
 import type { Event as CharacterEvent } from '@/types/character'
+import type { Effect } from '@/types/tables'
 import { DEFAULTS } from '@/utils/constants'
+import { modifierCalculator } from '@/services/modifierCalculator'
+import { markdownCharacterService } from '../services/markdownCharacterService'
 
 /**
  * Character store interface
@@ -52,6 +57,14 @@ interface CharacterStore {
   // Basic character updates
   updateCharacterName: (name: string) => void
   updateCharacterAge: (age: number) => void
+  
+  // Ability Score Management
+  rollAbilityScores: () => void
+  updateAbilityScore: (ability: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma', value: number) => void
+  
+  // Markdown management
+  getCharacterMarkdown: () => string
+  downloadCharacterMarkdown: () => void
   
   // Heritage & Birth (100s)
   updateRace: (race: Race) => void
@@ -130,12 +143,29 @@ interface CharacterStore {
   // Validation
   validateCharacter: () => { isValid: boolean; errors: string[]; warnings: string[] }
   
+  // Roster Management
+  saveCharacterToRoster: () => boolean
+  loadCharacterRoster: () => Character[]
+  deleteCharacterFromRoster: (characterId: string) => void
+  finalizeCharacter: () => boolean
+  
   // Persistence
   saveToLocalStorage: () => void
   loadFromLocalStorage: (characterId: string) => boolean
   exportCharacter: () => string
   importCharacter: (data: string) => boolean
   
+  // Balanced Modifier System
+  applyBalancedEffect: (effect: Effect, sourceEvent: string, sourceTable: string) => void
+  getModifierSummary: () => ModifierSummary | null
+  validateCharacterBalance: () => BalanceAssessment | null
+  getModifierBreakdown: () => Array<{
+    source: string
+    positive: any[]
+    negative: any[]
+    tradeoffReason?: string
+  }>
+
   // Utilities
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
@@ -157,7 +187,7 @@ function createEmptyCharacter(name: string = DEFAULTS.characterName): Character 
     // Heritage & Birth (100s) - Initialize with empty values
     race: {
       name: '',  // Empty so heritage tables will show
-      type: '',
+      type: 'Human' as const,
       events: [],
       modifiers: {}
     },
@@ -171,7 +201,7 @@ function createEmptyCharacter(name: string = DEFAULTS.characterName): Character 
       literacyRate: 50
     },
     socialStatus: {
-      level: DEFAULTS.socialStatusLevel,
+      level: '',  // Empty until determined during Heritage step
       solMod: 0,
       survivalMod: 0,
       moneyMultiplier: 1,
@@ -179,11 +209,11 @@ function createEmptyCharacter(name: string = DEFAULTS.characterName): Character 
       benefits: []
     },
     birthCircumstances: {
-      legitimacy: 'Legitimate',
-      familyHead: 'Unknown',
+      legitimacy: '',  // Empty until determined during Heritage step
+      familyHead: '',
       siblings: 0,
-      birthOrder: 1,
-      birthplace: 'Unknown',
+      birthOrder: 0,
+      birthplace: '',
       unusualCircumstances: [],
       biMod: 0
     },
@@ -248,6 +278,22 @@ function createEmptyCharacter(name: string = DEFAULTS.characterName): Character 
       legitMod: 0
     },
     generationHistory: [],
+    
+    // Balanced Modifier System
+    appliedModifiers: [],
+    modifierSummary: {
+      abilityScores: {},
+      skills: {},
+      traits: [],
+      socialModifiers: [],
+      overallBalance: {
+        totalPositive: 0,
+        totalNegative: 0,
+        netBalance: 0,
+        warnings: []
+      }
+    },
+    
     dndIntegration: {
       abilityModifiers: {
         strength: 0,
@@ -332,6 +378,62 @@ export const useCharacterStore = create<CharacterStore>()(
         character: { ...character, age },
         hasUnsavedChanges: true 
       })
+    },
+
+    // Ability Score Management
+    rollAbilityScores: () => {
+      const { character } = get()
+      if (!character) return
+      
+      // Roll 3d6 for each ability score (D&D 3.5 standard)
+      const roll3d6 = () => Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1
+      
+      const abilityScores = {
+        strength: roll3d6(),
+        dexterity: roll3d6(),
+        constitution: roll3d6(),
+        intelligence: roll3d6(),
+        wisdom: roll3d6(),
+        charisma: roll3d6()
+      }
+      
+      set({ 
+        character: { 
+          ...character, 
+          ...abilityScores,
+          lastModified: new Date()
+        },
+        hasUnsavedChanges: true 
+      })
+    },
+
+    updateAbilityScore: (ability, value) => {
+      const { character } = get()
+      if (!character) return
+      
+      set({ 
+        character: { 
+          ...character, 
+          [ability]: value,
+          lastModified: new Date()
+        },
+        hasUnsavedChanges: true 
+      })
+    },
+
+    // Markdown management
+    getCharacterMarkdown: () => {
+      const { character } = get()
+      if (!character) return '# No Character\n\nNo character is currently loaded.'
+      
+      return markdownCharacterService.getCharacterMarkdown(character)
+    },
+
+    downloadCharacterMarkdown: () => {
+      const { character } = get()
+      if (!character) return
+      
+      markdownCharacterService.downloadCharacterMarkdown(character)
     },
 
     // Heritage & Birth updates
@@ -575,15 +677,18 @@ export const useCharacterStore = create<CharacterStore>()(
 
     addSkill: (skill) => {
       const { character } = get()
-      if (!character) return
+      if (!character || !character.skills) return
       
       // Check if skill already exists and update rank instead
       const existingSkillIndex = character.skills.findIndex(s => s.name === skill.name)
       
-      if (existingSkillIndex >= 0) {
-        const updatedSkills = character.skills.map((s, i) => 
-          i === existingSkillIndex ? { ...s, rank: Math.max(s.rank, skill.rank) } : s
-        )
+      if (existingSkillIndex !== -1) {
+        const updatedSkills = [...character.skills]
+        updatedSkills[existingSkillIndex] = {
+          ...updatedSkills[existingSkillIndex],
+          rank: Math.max(updatedSkills[existingSkillIndex].rank, skill.rank),
+          specialty: skill.specialty || updatedSkills[existingSkillIndex].specialty
+        }
         
         set({ 
           character: {
@@ -605,12 +710,14 @@ export const useCharacterStore = create<CharacterStore>()(
 
     removeSkill: (skillName) => {
       const { character } = get()
-      if (!character) return
+      if (!character || !character.skills) return
+      
+      const updatedSkills = character.skills.filter(skill => skill.name !== skillName)
       
       set({ 
         character: {
           ...character,
-          skills: character.skills.filter(skill => skill.name !== skillName)
+          skills: updatedSkills
         },
         hasUnsavedChanges: true 
       })
@@ -618,11 +725,16 @@ export const useCharacterStore = create<CharacterStore>()(
 
     updateSkill: (skillName, updates) => {
       const { character } = get()
-      if (!character) return
+      if (!character || !character.skills) return
       
-      const updatedSkills = character.skills.map(skill => 
-        skill.name === skillName ? { ...skill, ...updates } : skill
-      )
+      const existingSkillIndex = character.skills.findIndex(s => s.name === skillName)
+      if (existingSkillIndex === -1) return
+      
+      const updatedSkills = [...character.skills]
+      updatedSkills[existingSkillIndex] = {
+        ...updatedSkills[existingSkillIndex],
+        ...(updates as Partial<Skill>)
+      }
       
       set({ 
         character: {
@@ -1074,7 +1186,7 @@ export const useCharacterStore = create<CharacterStore>()(
 
     getTotalSkills: () => {
       const { character } = get()
-      return character?.skills.length || 0
+      return character?.skills ? character.skills.length : 0
     },
 
     getTotalOccupations: () => {
@@ -1118,6 +1230,97 @@ export const useCharacterStore = create<CharacterStore>()(
         isValid: errors.length === 0,
         errors,
         warnings
+      }
+    },
+
+    // Roster Management
+    saveCharacterToRoster: () => {
+      const { character } = get()
+      if (!character) return false
+      
+      try {
+        // Load existing roster
+        const existingRoster = get().loadCharacterRoster()
+        
+        // Check if character already exists in roster and update, or add new
+        const existingIndex = existingRoster.findIndex(c => c.id === character.id)
+        let updatedRoster: Character[]
+        
+        if (existingIndex >= 0) {
+          // Update existing character
+          updatedRoster = [...existingRoster]
+          updatedRoster[existingIndex] = { ...character, lastModified: new Date() }
+        } else {
+          // Add new character
+          updatedRoster = [...existingRoster, { ...character, lastModified: new Date() }]
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('pancasting-characters', JSON.stringify(updatedRoster))
+        set({ hasUnsavedChanges: false })
+        return true
+      } catch (error) {
+        set({ error: 'Failed to save character to roster' })
+        return false
+      }
+    },
+
+    loadCharacterRoster: () => {
+      try {
+        const stored = localStorage.getItem('pancasting-characters')
+        if (stored) {
+          return JSON.parse(stored) as Character[]
+        }
+        return []
+      } catch (error) {
+        set({ error: 'Failed to load character roster' })
+        return []
+      }
+    },
+
+    deleteCharacterFromRoster: (characterId: string) => {
+      try {
+        const existingRoster = get().loadCharacterRoster()
+        const updatedRoster = existingRoster.filter(c => c.id !== characterId)
+        localStorage.setItem('pancasting-characters', JSON.stringify(updatedRoster))
+        
+        // If we're deleting the currently loaded character, reset it
+        const { character } = get()
+        if (character?.id === characterId) {
+          set({ character: null, hasUnsavedChanges: false })
+        }
+      } catch (error) {
+        set({ error: 'Failed to delete character from roster' })
+      }
+    },
+
+    finalizeCharacter: () => {
+      const { character } = get()
+      if (!character) return false
+      
+      try {
+        // Set completion timestamp
+        const finalizedCharacter = {
+          ...character,
+          completedAt: new Date(),
+          lastModified: new Date(),
+          isFinalized: true
+        }
+        
+        // Update current character
+        set({ character: finalizedCharacter })
+        
+        // Save to roster
+        const saved = get().saveCharacterToRoster()
+        
+        if (saved) {
+          console.log('✅ Character finalized and saved to roster:', finalizedCharacter.name)
+        }
+        
+        return saved
+      } catch (error) {
+        set({ error: 'Failed to finalize character' })
+        return false
       }
     },
 
@@ -1183,6 +1386,45 @@ export const useCharacterStore = create<CharacterStore>()(
 
     markUnsaved: () => {
       set({ hasUnsavedChanges: true })
+    },
+
+    // Balanced Modifier System
+    applyBalancedEffect: (effect, sourceEvent, sourceTable) => {
+      const { character } = get()
+      if (!character) return
+      
+      const updatedCharacter = modifierCalculator.applyBalancedEffect(
+        character, 
+        effect, 
+        sourceEvent, 
+        sourceTable
+      )
+      
+      set({ 
+        character: updatedCharacter,
+        hasUnsavedChanges: true 
+      })
+    },
+
+    getModifierSummary: () => {
+      const { character } = get()
+      if (!character?.modifierSummary) return null
+      
+      return character.modifierSummary
+    },
+
+    validateCharacterBalance: () => {
+      const { character } = get()
+      if (!character) return null
+      
+      return modifierCalculator.validateCharacterBalance(character)
+    },
+
+    getModifierBreakdown: () => {
+      const { character } = get()
+      if (!character) return []
+      
+      return modifierCalculator.getModifierBreakdown(character)
     }
   }))
 )

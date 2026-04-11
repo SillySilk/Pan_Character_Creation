@@ -497,9 +497,213 @@ export const familyRelationsTable: ContactTable = {
   ]
 }
 
+// Table 756: Professional Contacts
+export const professionalContactsTable: ContactTable = {
+  id: '756',
+  name: 'Professional Contacts',
+  category: 'contacts',
+  diceType: 'd100',
+  relationshipType: 'professional',
+  generateStats: false,
+  instructions: 'Roll d100 to determine professional contact or network',
+  entries: [
+    {
+      id: '756_01',
+      rollRange: [1, 10],
+      result: 'Guild Master',
+      description: 'Leader of professional organization',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Guild Master',
+            type: 'Professional Authority',
+            influence: 'High',
+            relationship: 'Professional Superior',
+            benefits: ['Guild Resources', 'Training Access', 'Legal Protection']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_02',
+      rollRange: [11, 20],
+      result: 'Trade Partner',
+      description: 'Reliable business associate',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Trade Partner',
+            type: 'Business Associate',
+            influence: 'Moderate',
+            relationship: 'Mutual Benefit',
+            benefits: ['Trade Opportunities', 'Market Information', 'Shared Resources']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_03',
+      rollRange: [21, 30],
+      result: 'Information Broker',
+      description: 'Dealer in secrets and knowledge',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Information Broker',
+            type: 'Criminal Network',
+            influence: 'Moderate',
+            relationship: 'Professional Service',
+            benefits: ['Secret Information', 'Rumor Network', 'Underground Contacts']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_04',
+      rollRange: [31, 40],
+      result: 'Court Official',
+      description: 'Government bureaucrat or administrator',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Court Official',
+            type: 'Government Contact',
+            influence: 'High',
+            relationship: 'Official Business',
+            benefits: ['Legal Assistance', 'Permits & Licenses', 'Government Information']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_05',
+      rollRange: [41, 50],
+      result: 'Master Craftsman',
+      description: 'Expert artisan in specialized field',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Master Craftsman',
+            type: 'Artisan Network',
+            influence: 'Moderate',
+            relationship: 'Professional Respect',
+            benefits: ['Quality Goods', 'Craft Knowledge', 'Artisan Network']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_06',
+      rollRange: [51, 60],
+      result: 'Tavern Keeper',
+      description: 'Social hub manager with wide connections',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Tavern Keeper',
+            type: 'Social Network',
+            influence: 'Moderate',
+            relationship: 'Friendly Service',
+            benefits: ['Local Gossip', 'Meeting Place', 'Traveler Information']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_07',
+      rollRange: [61, 70],
+      result: 'Temple Priest',
+      description: 'Religious authority and community leader',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Temple Priest',
+            type: 'Religious Authority',
+            influence: 'High',
+            relationship: 'Spiritual Guidance',
+            benefits: ['Healing Services', 'Religious Ceremonies', 'Community Standing']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_08',
+      rollRange: [71, 80],
+      result: 'Caravan Master',
+      description: 'Leader of merchant trading expeditions',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Caravan Master',
+            type: 'Trade Network',
+            influence: 'Moderate',
+            relationship: 'Business Partnership',
+            benefits: ['Travel Opportunities', 'Trade Routes', 'Exotic Goods']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_09',
+      rollRange: [81, 90],
+      result: 'Scholar Network',
+      description: 'Academic circle with research connections',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Scholar Network',
+            type: 'Academic Circle',
+            influence: 'Moderate',
+            relationship: 'Intellectual Exchange',
+            benefits: ['Research Access', 'Ancient Knowledge', 'Academic Resources']
+          }
+        }
+      ]
+    },
+    {
+      id: '756_10',
+      rollRange: [91, 100],
+      result: 'Royal Court Connection',
+      description: 'Contact within nobility or royal household',
+      effects: [
+        {
+          type: 'relationship',
+          target: 'contacts',
+          value: {
+            name: 'Royal Court Connection',
+            type: 'Noble Network',
+            influence: 'Very High',
+            relationship: 'Court Privilege',
+            benefits: ['Royal Favor', 'Noble Connections', 'Political Influence']
+          }
+        }
+      ]
+    }
+  ]
+}
+
 // Export all contact tables
 export const contactTables: Table[] = [
   npcCompanionsTable,
   rivalsEnemiesTable,
-  familyRelationsTable
+  familyRelationsTable,
+  professionalContactsTable
 ]

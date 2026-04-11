@@ -908,9 +908,81 @@ export const hobbiesTable: OccupationTable = {
   ]
 }
 
+// Table 315: Unusual Occupations
+export const unusualOccupationsTable: Table = {
+  id: '315',
+  name: 'Unusual Occupations',
+  category: 'occupations',
+  diceType: 'd100',
+  instructions: 'Roll d100 for unusual occupation',
+  entries: [
+    {
+      id: '315_01',
+      rollRange: [1, 10],
+      result: 'Monster Hunter',
+      description: 'Professional tracker and slayer of dangerous creatures'
+    },
+    {
+      id: '315_02', 
+      rollRange: [11, 20],
+      result: 'Tomb Robber',
+      description: 'Specialist in ancient burial sites and forgotten ruins'
+    },
+    {
+      id: '315_03',
+      rollRange: [21, 30], 
+      result: 'Court Magician',
+      description: 'Royal advisor with magical abilities'
+    },
+    {
+      id: '315_04',
+      rollRange: [31, 40],
+      result: 'Dragon Negotiator', 
+      description: 'Diplomatic specialist for dealing with ancient wyrms'
+    },
+    {
+      id: '315_05',
+      rollRange: [41, 50],
+      result: 'Planar Scholar',
+      description: 'Expert on other dimensions and their inhabitants'
+    },
+    {
+      id: '315_06',
+      rollRange: [51, 60],
+      result: 'Relic Hunter',
+      description: 'Seeker of lost magical artifacts'
+    },
+    {
+      id: '315_07',
+      rollRange: [61, 70],
+      result: 'Demon Summoner',
+      description: 'Specialist in binding and controlling fiends'
+    },
+    {
+      id: '315_08',
+      rollRange: [71, 80],
+      result: 'Time Scholar',
+      description: 'Student of temporal magic and chronology'
+    },
+    {
+      id: '315_09',
+      rollRange: [81, 90],
+      result: 'Divine Oracle',
+      description: 'Prophet with direct connection to the gods'
+    },
+    {
+      id: '315_10',
+      rollRange: [91, 100],
+      result: 'Void Walker',
+      description: 'Explorer of the spaces between reality'
+    }
+  ]
+}
+
 // Export all occupation tables
 export const occupationTables: Table[] = [
   apprenticeshipsTable,
   civilizedOccupationsTable,
-  hobbiesTable
+  hobbiesTable,
+  unusualOccupationsTable
 ]
