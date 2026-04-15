@@ -186,10 +186,10 @@ export function CharacterEditor({
 
   const removeSkill = (skillName: string) => {
     if (!editedCharacter || !editedCharacter.skills) return
-    
+
     const updated = { ...editedCharacter }
     if (updated.skills) {
-      delete updated.skills[skillName]
+      updated.skills = updated.skills.filter(s => s.name !== skillName)
     }
     setEditedCharacter(updated)
     setHasChanges(true)

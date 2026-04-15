@@ -1,7 +1,6 @@
 // Unit tests for DNDCharacterView component
 
-import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { DNDCharacterView, EmbeddedDNDCharacterView, DNDCharacterTab } from '../DNDCharacterView'
 import type { Character } from '../../../types/character'
@@ -257,7 +256,7 @@ const mockClassRecommendations = [
 
 describe('DNDCharacterView', () => {
   const mockOnCharacterUpdate = vi.fn()
-  const mockUpdateCharacter = vi.fn()
+
   const mockConvertToDND = vi.fn()
   const mockRefreshDNDData = vi.fn()
 

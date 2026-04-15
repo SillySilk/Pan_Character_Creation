@@ -1,9 +1,9 @@
 // D&D Character View Container
 // Wraps existing DNDCharacterSheet with data conversion and state management
 
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import type { Character } from '../../types/character'
-import type { DDCharacterSheet, DDClassSuggestion } from '../../types/dnd'
+import type { DDClassSuggestion } from '../../types/dnd'
 import { DNDCharacterSheet } from '../dnd/DNDCharacterSheet'
 import { ClassSelector } from '../dnd/ClassSelector'
 import { dndMappingService } from '../../services/dndMappingService'
@@ -396,7 +396,7 @@ export interface EmbeddedDNDCharacterViewProps {
 export function EmbeddedDNDCharacterView({
   character,
   showHeader = true,
-  showClassSelection = true
+  showClassSelection: _showClassSelection = true
 }: EmbeddedDNDCharacterViewProps) {
   return (
     <DNDCharacterView

@@ -1,11 +1,11 @@
 // Occupation Table Component for PanCasting
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { OccupationTable as OccupationTableType } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
-import type { DiceRoll } from '../../../types/tables'
+import type { DiceRoll, Effect } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
 
 interface OccupationTableProps {
@@ -24,7 +24,7 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
   const [showSkillDetails, setShowSkillDetails] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
-  const { currentStep } = useGenerationStore()
+  useGenerationStore()
   
   // Use global singleton TableEngine and TableService
   const tableEngine = getGlobalTableEngine()
@@ -55,7 +55,7 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
   }, [tableId, tableEngine])
 
   const handleRoll = async () => {
-    if (!table) return
+    if (!table || !character) return
     
     setRolling(true)
     
@@ -103,7 +103,7 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
   }
 
   const handleManualSelect = async (entryId: string) => {
-    if (!table) return
+    if (!table || !character) return
     
     const entry = table.entries.find(e => e.id === entryId)
     if (!entry) return
@@ -125,8 +125,8 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
     
     // Process effects
     try {
-      const result = await tableEngine.processTable(table.id, character, {
-        manualSelection: entry.id
+      const result = tableEngine.processTable(table.id, character, {
+        manualSelection: entry.rollRange[0]
       })
       
       if (result.success && result.character) {
@@ -215,9 +215,9 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
         
         <p className="text-parchment-700 mb-3">{table.instructions}</p>
         
-        {table.skillBonusCalculation && (
+        {(table as OccupationTableType & { skillBonusCalculation?: string }).skillBonusCalculation && (
           <p className="text-sm text-parchment-600 mb-3">
-            <span className="font-medium">Skill Calculation:</span> {table.skillBonusCalculation}
+            <span className="font-medium">Skill Calculation:</span> {(table as OccupationTableType & { skillBonusCalculation?: string }).skillBonusCalculation}
           </p>
         )}
         
@@ -294,7 +294,7 @@ export function OccupationTable({ tableId, occupationType, onComplete }: Occupat
             <div className="space-y-2">
               <h5 className={`font-semibold ${colors.text}`}>Skills & Benefits:</h5>
               <div className="grid gap-2">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: Effect, index: number) => (
                   <div key={index} className="bg-white p-3 rounded border">
                     {effect.type === 'skill' && (
                       <div className="flex items-center justify-between">

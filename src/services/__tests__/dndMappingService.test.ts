@@ -301,7 +301,7 @@ describe('DNDMappingService', () => {
         skills: [{
           name: 'Unique Skill',
           rank: 3,
-          type: 'Special',
+          type: 'Unusual',
           source: 'Special Training',
           description: 'A unique skill not in the mapping'
         }]
@@ -561,8 +561,8 @@ describe('DNDMappingService', () => {
         age: 20,
         race: { name: '', type: 'Human', events: [], modifiers: {} },
         culture: { name: 'Unknown', type: 'Civilized', cuMod: 0, nativeEnvironment: [], survival: 6, benefits: [], literacyRate: 50 },
-        socialStatus: { level: '', solMod: 0, survivalMod: 0, moneyMultiplier: 1, literacyMod: 0, benefits: [] },
-        birthCircumstances: { legitimacy: '', familyHead: '', siblings: 0, birthOrder: 0, birthplace: '', unusualCircumstances: [], biMod: 0 },
+        socialStatus: { level: 'Poor' as const, solMod: 0, survivalMod: 0, moneyMultiplier: 1, literacyMod: 0, benefits: [] },
+        birthCircumstances: { legitimacy: 'Legitimate' as const, familyHead: '', siblings: 0, birthOrder: 0, birthplace: '', unusualCircumstances: [], biMod: 0 },
         family: { head: 'Unknown', members: [], occupations: [], relationships: [], notableFeatures: [], socialConnections: [] },
         youthEvents: [],
         adulthoodEvents: [],

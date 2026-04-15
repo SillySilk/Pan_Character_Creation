@@ -17,10 +17,13 @@ import type {
   DD5eClassSuggestion,
   DD5eBackgroundSuggestion,
   DD5eExportOptions,
-  DD5eConverter,
+  DD5eConverter as DD5eConverterInterface,
   DD5eValidation,
   DD5eAbilityScores,
-  DD5eSkillProficiencies
+  DD5eSkillProficiencies,
+  DD5eBackgroundFeature,
+  DD5eItemType,
+  DD5eItemRarity
 } from '@/types/dnd5e'
 import { abilityScoreGenerator, type AbilityScores } from './abilityScoreGenerator'
 
@@ -38,11 +41,11 @@ export interface UnifiedDNDStats {
  */
 export class DNDIntegrationService {
   private dd35Converter: DD35Converter
-  private dd5eConverter: DD5eConverter
+  private dd5eConverter: DD5eConverterInterface
 
   constructor() {
     this.dd35Converter = new DD35Converter()
-    this.dd5eConverter = new DD5eConverter()
+    this.dd5eConverter = new DD5eConverterImpl()
   }
 
   /**
@@ -270,9 +273,9 @@ ${sheet.backstory}
   }
 
   private async generatePDF(
-    sheet: DDCharacterSheet | DD5eCharacterSheet, 
-    edition: DNDEdition,
-    options: DDExportOptions | DD5eExportOptions
+    _sheet: DDCharacterSheet | DD5eCharacterSheet,
+    _edition: DNDEdition,
+    _options: DDExportOptions | DD5eExportOptions
   ): Promise<DDExportResult> {
     // PDF generation would require a library like jsPDF or Puppeteer
     // For now, return an error indicating this feature needs implementation
@@ -352,6 +355,7 @@ class DD35Converter implements DDConverter {
       classes: this.mapClasses(character),
       level: character.level || 1,
       alignment: this.mapAlignment(character),
+      size: 'Medium',
       age: character.age,
       
       abilities: this.generateAbilityScores(character),
@@ -422,12 +426,6 @@ class DD35Converter implements DDConverter {
       s.description?.toLowerCase().includes('magic')
     ).length
     
-    const socialSkills = character.skills.filter(s => 
-      s.type === 'Social' ||
-      s.name.toLowerCase().includes('diplomacy') ||
-      s.name.toLowerCase().includes('bluff')
-    ).length
-
     // Fighter suggestion - check combat skills OR military occupations
     const militaryOccupations = character.occupations.filter(o => o.type === 'Military').length
     if (combatSkills >= 2 || militaryOccupations >= 1) {
@@ -481,7 +479,7 @@ class DD35Converter implements DDConverter {
     return Math.floor(gold)
   }
 
-  generateBackgroundFeatures(character: Character): any[] {
+  generateBackgroundFeatures(_character: Character): any[] {
     return [] // Implementation would go here
   }
 
@@ -698,7 +696,7 @@ class DD35Converter implements DDConverter {
 /**
  * D&D 5e Converter Implementation
  */
-class DD5eConverter implements DD5eConverter {
+class DD5eConverterImpl implements DD5eConverterInterface {
   convertCharacter(character: Character): DD5eCharacterSheet {
     const abilityScores = this.calculateAbilityScores(character)
     const abilityModifiers = this.calculateAbilityModifiers(abilityScores)
@@ -855,8 +853,6 @@ class DD5eConverter implements DD5eConverter {
     // Analyze character's occupations and background for suggestions
     const hasAcademic = character.occupations.some(o => o.type === 'Academic')
     const hasMilitary = character.occupations.some(o => o.type === 'Military')
-    const hasCriminal = character.occupations.some(o => o.type === 'Criminal')
-    const hasReligious = character.occupations.some(o => o.type === 'Religious')
     
     if (hasAcademic) {
       suggestions.push({
@@ -1004,7 +1000,7 @@ class DD5eConverter implements DD5eConverter {
   private mapEquipment(character: Character): any[] {
     return character.specialItems.map(item => ({
       name: item.name,
-      type: 'Miscellaneous' as DD5eItemType,
+      type: 'Adventuring Gear' as DD5eItemType,
       description: '',
       rarity: 'Common' as DD5eItemRarity,
       attunement: false,

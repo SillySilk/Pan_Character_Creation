@@ -1,6 +1,6 @@
 // Miscellaneous Events Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { TableProcessingResult, MiscellaneousTable as MiscellaneousTableType } from '../../../types/tables'
@@ -60,16 +60,13 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
         // Create the event
         const newEvent: Event = {
           id: `misc_${Date.now()}`,
-          type: table.eventType || 'miscellaneous',
-          category: 'miscellaneous',
-          period: 'Miscellaneous',
+          name: rollResult.entry.result,
+          eventType: table.eventType || 'miscellaneous',
+          category: 'Miscellaneous',
+          period: 'Adulthood',
           age: character.age || 0,
           result: rollResult.entry.result,
-          description: rollResult.entry.description || '',
-          tableId: table.id,
-          rollValue: rollResult.rollResult?.finalResult || 0,
-          effects: rollResult.entry.effects || [],
-          timestamp: Date.now()
+          description: rollResult.entry.description || ''
         }
 
         // Add event to character
@@ -229,7 +226,7 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
         <div className={`bg-${colorClass}-50 border-2 border-${colorClass}-500 rounded-lg p-4 animate-fade-in`}>
           <div className="text-center mb-4">
             <div className={`text-2xl font-bold text-${colorClass}-800 mb-2`}>
-              🎯 Rolled: {result.rollResult?.finalResult}
+              🎯 Rolled: {typeof result.rollResult === 'number' ? result.rollResult : result.rollResult?.finalResult}
             </div>
             <div className={`text-lg font-semibold text-${colorClass}-700`}>
               {result.entry?.result}
@@ -282,7 +279,7 @@ export function MiscellaneousTable({ tableId, onComplete }: MiscellaneousTablePr
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-medium text-gray-800 mb-3">Sample Events (Roll {table.diceType}):</h4>
           <div className="grid grid-cols-1 gap-2 text-sm">
-            {table.entries.slice(0, 5).map((entry, index) => (
+            {table.entries.slice(0, 5).map((entry) => (
               <div key={entry.id} className="flex items-start justify-between py-2 border-b border-gray-200 last:border-b-0">
                 <span className="text-gray-600 font-mono text-xs">
                   {Array.isArray(entry.rollRange) ? 

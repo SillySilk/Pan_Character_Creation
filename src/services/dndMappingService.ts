@@ -1,20 +1,17 @@
 // D&D 3.5 Character Mapping Service for PanCasting
 // Converts narrative character data to D&D 3.5 format
 
-import type { Character, Skill, PersonalityTrait } from '../types/character'
+import type { Character, PersonalityTrait } from '../types/character'
 import type {
-  DDStats,
   AbilityModifiers,
-  SkillBonuses,
   BackgroundFeature,
   DDCharacterSheet,
-  DDClass,
   DDSkill,
   AbilityScore,
   Save,
   DDClassSuggestion
 } from '../types/dnd'
-import { DND_CORE_SKILLS, getAbilityModifier, calculateSkillBonus } from '../data/dndSkills'
+import { DND_CORE_SKILLS, getAbilityModifier } from '../data/dndSkills'
 import { DND_CORE_CLASSES, getClassByName } from '../data/dndClasses'
 
 export interface DNDMappingService {
@@ -32,18 +29,6 @@ export interface DNDMappingService {
   calculateStartingWealth(character: Character): number
 }
 
-/**
- * Attribute to Ability Score Mapping Configuration
- */
-const ATTRIBUTE_MAPPING = {
-  // Primary mappings - narrative attributes to D&D abilities
-  strength: ['strength', 'physical', 'might', 'power'],
-  dexterity: ['dexterity', 'agility', 'speed', 'reflexes', 'coordination'],
-  constitution: ['constitution', 'health', 'endurance', 'stamina', 'vitality'],
-  intelligence: ['intelligence', 'intellect', 'reasoning', 'logic', 'education'],
-  wisdom: ['wisdom', 'perception', 'awareness', 'intuition', 'willpower'],
-  charisma: ['charisma', 'presence', 'leadership', 'persuasion', 'social']
-}
 
 /**
  * Skill Mapping Configuration
@@ -338,7 +323,7 @@ class DNDMappingServiceImpl implements DNDMappingService {
     // Generate features from social status
     if (character.socialStatus) {
       const statusLevel = character.socialStatus.level
-      if (statusLevel && statusLevel !== '') {
+      if (statusLevel) {
         features.push({
           name: `Social Standing: ${statusLevel}`,
           description: `Born into ${statusLevel.toLowerCase()} circumstances`,
@@ -369,6 +354,7 @@ class DNDMappingServiceImpl implements DNDMappingService {
       )
 
       for (const rel of significantRelationships.slice(0, 1)) { // Limit to 1
+        if (!rel.person) continue
         features.push({
           name: `Important Contact: ${rel.person.name}`,
           description: `Maintains a relationship with ${rel.person.name}`,
@@ -431,7 +417,6 @@ class DNDMappingServiceImpl implements DNDMappingService {
   convertToDNDCharacter(character: Character): DDCharacterSheet {
     const abilities = this.calculateAbilityScores(character)
     const skills = this.mapSkillsToDNDSkills(character)
-    const backgroundFeatures = this.generateDNDBackground(character)
     const level = character.level || 1
 
     return {
@@ -741,7 +726,7 @@ class DNDMappingServiceImpl implements DNDMappingService {
     return 'Low'
   }
 
-  private mapPersonalityToAlignment(character: Character): string {
+  mapPersonalityToAlignment(character: Character): string {
     if (!character.personalityTraits) return 'True Neutral'
 
     const lightside = character.personalityTraits.lightside.length
@@ -787,7 +772,7 @@ class DNDMappingServiceImpl implements DNDMappingService {
     }
   }
 
-  private calculateStartingWealth(character: Character): number {
+  calculateStartingWealth(character: Character): number {
     let wealth = 100 // Base starting gold
 
     if (character.socialStatus) {
@@ -805,7 +790,7 @@ class DNDMappingServiceImpl implements DNDMappingService {
     return Math.round(wealth)
   }
 
-  private generateBackgroundDescription(character: Character): string {
+  generateBackgroundDescription(character: Character): string {
     const parts: string[] = []
 
     if (character.race && character.culture) {
@@ -851,7 +836,7 @@ class DNDMappingServiceImpl implements DNDMappingService {
     }
 
     const important = character.relationships.slice(0, 3)
-    return important.map(r => `${r.person.name} (${r.type})`).join(', ')
+    return important.map(r => `${r.person?.name ?? r.name ?? 'Unknown'} (${r.type})`).join(', ')
   }
 
   private generateBackstoryDescription(character: Character): string {

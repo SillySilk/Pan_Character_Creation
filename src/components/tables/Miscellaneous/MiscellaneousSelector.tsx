@@ -1,6 +1,6 @@
 // Miscellaneous Events Selection Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { MiscellaneousTable } from './MiscellaneousTable'
@@ -33,18 +33,18 @@ export function MiscellaneousSelector({ onComplete }: MiscellaneousSelectorProps
 
   // Check if character already has miscellaneous events
   useEffect(() => {
-    if (character?.events) {
-      const miscEvents = character.events.filter(e => e.category === 'miscellaneous')
+    if (character?.miscellaneousEvents) {
+      const miscEvents = character.miscellaneousEvents.filter((e: { category?: string }) => e.category === 'Miscellaneous')
       if (miscEvents.length > 0) {
         setSelectedEvents(miscEvents)
         // Mark some tables as completed based on existing events
         const completed = new Set<string>()
-        miscEvents.forEach(event => {
+        miscEvents.forEach((event: { eventType?: string }) => {
           // Try to match events to table types
-          if (event.type?.includes('tragedy')) completed.add('624')
-          if (event.type?.includes('fortune')) completed.add('625')
-          if (event.type?.includes('encounter')) completed.add('626')
-          if (event.type?.includes('adventure')) completed.add('627')
+          if (event.eventType?.includes('tragedy')) completed.add('624')
+          if (event.eventType?.includes('fortune')) completed.add('625')
+          if (event.eventType?.includes('encounter')) completed.add('626')
+          if (event.eventType?.includes('adventure')) completed.add('627')
         })
         setCompletedTables(completed)
       }

@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { DNDIntegrationService } from '../dndIntegrationService'
 import type { Character } from '@/types/character'
+import type { DDCharacterSheet } from '@/types/dnd'
+import type { DD5eCharacterSheet } from '@/types/dnd5e'
 
 // Mock character for testing
 const mockCharacter: Character = {
@@ -159,8 +161,8 @@ describe('DND Integration Service', () => {
   describe('Character Conversion', () => {
     describe('D&D 3.5 Conversion', () => {
       it('should convert character to D&D 3.5 character sheet', () => {
-        const result = service.convertCharacter(mockCharacter, '3.5')
-        
+        const result = service.convertCharacter(mockCharacter, '3.5') as DDCharacterSheet
+
         expect(result.characterName).toBe('Test Warrior')
         expect(result.age).toBe(28)
         expect(result.level).toBe(3)
@@ -174,25 +176,25 @@ describe('DND Integration Service', () => {
       })
 
       it('should include racial traits for humans', () => {
-        const result = service.convertCharacter(mockCharacter, '3.5')
-        
+        const result = service.convertCharacter(mockCharacter, '3.5') as DDCharacterSheet
+
         expect(result.racialTraits).toContain('Extra Feat')
         expect(result.racialTraits).toContain('Extra Skill Points')
       })
 
       it('should map skills correctly', () => {
-        const result = service.convertCharacter(mockCharacter, '3.5')
-        
+        const result = service.convertCharacter(mockCharacter, '3.5') as DDCharacterSheet
+
         expect(result.skills.length).toBeGreaterThan(0)
-        
+
         const weaponSkill = result.skills.find(s => s.name.includes('Weapon') || s.name.includes('Handle'))
         expect(weaponSkill).toBeDefined()
         expect(weaponSkill!.ranks).toBeGreaterThan(0)
       })
 
       it('should generate appropriate background text', () => {
-        const result = service.convertCharacter(mockCharacter, '3.5')
-        
+        const result = service.convertCharacter(mockCharacter, '3.5') as DDCharacterSheet
+
         expect(result.background).toContain('Civilized culture')
         expect(result.background).toContain('Comfortable social standing')
       })
@@ -200,8 +202,8 @@ describe('DND Integration Service', () => {
 
     describe('D&D 5e Conversion', () => {
       it('should convert character to D&D 5e character sheet', () => {
-        const result = service.convertCharacter(mockCharacter, '5e')
-        
+        const result = service.convertCharacter(mockCharacter, '5e') as DD5eCharacterSheet
+
         expect(result.characterName).toBe('Test Warrior')
         expect(result.level).toBe(3)
         expect(result.race).toBe('Human')
@@ -217,22 +219,22 @@ describe('DND Integration Service', () => {
 
       it('should calculate correct proficiency bonus', () => {
         const testCharacter = { ...mockCharacter, level: 5 }
-        const result = service.convertCharacter(testCharacter, '5e')
-        
+        const result = service.convertCharacter(testCharacter, '5e') as DD5eCharacterSheet
+
         expect(result.proficiencyBonus).toBe(3) // Level 5 = +3 proficiency
       })
 
       it('should map personality traits correctly', () => {
-        const result = service.convertCharacter(mockCharacter, '5e')
-        
+        const result = service.convertCharacter(mockCharacter, '5e') as DD5eCharacterSheet
+
         expect(result.personalityTraits).toContain('Never backs down from danger')
         expect(result.bonds).toContain('Comrades')
         expect(result.ideals).toContain('Duty')
       })
 
       it('should include racial traits for humans', () => {
-        const result = service.convertCharacter(mockCharacter, '5e')
-        
+        const result = service.convertCharacter(mockCharacter, '5e') as DD5eCharacterSheet
+
         expect(result.featuresAndTraits).toContain('Extra Feat')
         expect(result.featuresAndTraits).toContain('Extra Skill')
       })
@@ -262,8 +264,8 @@ describe('DND Integration Service', () => {
         const magicCharacter = {
           ...mockCharacter,
           skills: [
-            { name: 'Magic Theory', rank: 3, type: 'Academic', source: 'Study' },
-            { name: 'Spellcraft', rank: 2, type: 'Academic', source: 'Training' }
+            { name: 'Magic Theory', rank: 3, type: 'Academic' as const, source: 'Study' },
+            { name: 'Spellcraft', rank: 2, type: 'Academic' as const, source: 'Training' }
           ],
           occupations: [
             {
@@ -388,8 +390,8 @@ describe('DND Integration Service', () => {
     })
 
     it('should include level appropriate check for 5e', () => {
-      const validation = service.validateCharacter(mockCharacter, '5e')
-      
+      const validation = service.validateCharacter(mockCharacter, '5e') as import('@/types/dnd5e').DD5eValidation
+
       expect('levelAppropriate' in validation).toBe(true)
       expect(validation.levelAppropriate).toBe(true)
     })

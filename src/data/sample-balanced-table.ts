@@ -1,7 +1,7 @@
 // Sample table demonstrating the new balanced modifier system
 // This shows how existing Central Casting events would be converted
 
-import type { Table, TableEntry, Effect } from '../types/tables'
+import type { Table } from '../types/tables'
 
 export const sampleBalancedYouthTable: Table = {
   id: 'sample_balanced_209',

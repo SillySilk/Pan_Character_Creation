@@ -14,8 +14,8 @@ interface CharacterSheetProps {
 
 export function CharacterSheet({
   character: propCharacter,
-  editable = false,
-  onSave,
+  editable: _editable = false,
+  onSave: _onSave,
   className = ''
 }: CharacterSheetProps) {
   const { character: storeCharacter } = useCharacterStore()
@@ -285,13 +285,13 @@ export function CharacterSheet({
                   {character.relationships.map((relationship, index) => (
                     <div key={index} className="bg-white rounded-lg p-3 border border-pink-200">
                       <div className="font-medium text-pink-800">
-                        {relationship.person.name || 'Unknown Contact'}
+                        {relationship.person?.name || relationship.name || 'Unknown Contact'}
                       </div>
                       {relationship.type && (
                         <div className="text-sm text-pink-600">{relationship.type}</div>
                       )}
                       <div className="text-xs text-gray-600 mt-1">
-                        {relationship.person.type} - {relationship.type} relationship
+                        {relationship.person?.type} - {relationship.type} relationship
                       </div>
                     </div>
                   ))}
@@ -347,7 +347,7 @@ export function CharacterSheet({
                           </div>
                           {event.rollDetails && (
                             <div className="text-xs text-gray-500 mt-1">
-                              Roll: {event.rollDetails}
+                              Roll: {event.rollDetails.finalRoll} ({event.rollDetails.breakdown})
                             </div>
                           )}
                           {event.manualSelection && (

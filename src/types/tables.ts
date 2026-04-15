@@ -12,7 +12,7 @@ export interface Table {
   conditions?: TableCondition[]
   description?: string
   specialRules?: string[]
-  crossReferences?: string[]
+  crossReferences?: Array<string | { condition: string; [key: string]: unknown }>
 }
 
 export interface TableEntry {
@@ -21,19 +21,20 @@ export interface TableEntry {
   result: string
   description?: string
   effects?: Effect[]
-  goto?: string
+  goto?: string | { tableId: string; condition?: string; [key: string]: unknown }
   personalityTrait?: PersonalityTraitType
   conditions?: Condition[]
   subtableReference?: string
   modifiers?: Partial<Modifiers>
   specialInstructions?: string
-  choices?: Array<{ text: string; value: any }>
+  choices?: Array<{ text?: string; value?: any; id?: string; description?: string; effects?: Effect[] }>
 }
 
 export interface Effect {
-  type: 'modifier' | 'trait' | 'skill' | 'item' | 'relationship' | 'occupation' | 'event' | 'property' | 'balanced'
-  target: string
-  value: any
+  type: 'modifier' | 'trait' | 'skill' | 'item' | 'relationship' | 'occupation' | 'event' | 'property' | 'balanced' | 'race' | 'attribute' | 'goto'
+  target?: string
+  value?: any
+  modifier?: number
   duration?: 'permanent' | 'temporary'
   condition?: string
   description?: string
@@ -49,7 +50,7 @@ export interface BalancedModifier {
   target: string
   value: number | string
   description: string
-  category: 'physical' | 'intellectual' | 'social' | 'psychological'
+  category: 'physical' | 'intellectual' | 'social' | 'psychological' | 'practical'
 }
 
 export interface Condition {
@@ -96,7 +97,7 @@ export type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100' | '2d
 export type ModifierKey = keyof Modifiers
 
 // Personality Trait Types
-export type PersonalityTraitType = 'Lightside' | 'Neutral' | 'Darkside' | 'Random' | 'L' | 'N' | 'D' | 'R'
+export type PersonalityTraitType = 'Lightside' | 'Neutral' | 'Darkside' | 'Random' | 'L' | 'N' | 'D' | 'R' | 'E'
 
 // Table Result Processing
 export interface TableResult {
@@ -160,7 +161,9 @@ export interface OccupationTable extends Table {
   category: 'occupations'
   occupationType: 'craft' | 'professional' | 'military' | 'religious' | 'criminal' | 'special'
   cultureRestrictions?: string[]
+  culturalRestrictions?: string[]  // alias for cultureRestrictions
   skillsGranted?: string[]
+  trainingTime?: string
 }
 
 // Adulthood Event Tables (400s)
@@ -168,6 +171,8 @@ export interface AdulthoodTable extends Table {
   category: 'adulthood'
   minimumAge: number
   eventFrequency?: 'single' | 'multiple' | 'age_dependent'
+  lifeStage?: string
+  socialComplexity?: string
 }
 
 // Personality Tables (500s)
@@ -180,21 +185,21 @@ export interface PersonalityTable extends Table {
 // Miscellaneous Event Tables (600s)
 export interface MiscellaneousTable extends Table {
   category: 'miscellaneous'
-  eventType: 'unusual' | 'tragedy' | 'wonderful' | 'specialized'
+  eventType: 'unusual' | 'tragedy' | 'wonderful' | 'specialized' | 'fortune' | 'encounter' | 'adventure' | 'miscellaneous'
   complexity: 'simple' | 'complex' | 'multi_stage'
 }
 
 // Contact Tables (700s)
 export interface ContactTable extends Table {
   category: 'contacts'
-  relationshipType: 'npc' | 'companion' | 'rival' | 'family'
+  relationshipType: 'npc' | 'companion' | 'rival' | 'family' | 'professional'
   generateStats?: boolean
 }
 
 // Special Item Tables (800s)
 export interface SpecialTable extends Table {
   category: 'special'
-  itemType: 'gift' | 'legacy' | 'magical' | 'property'
+  itemType: 'gift' | 'legacy' | 'magical' | 'property' | 'special' | 'equipment'
   valuationRequired?: boolean
 }
 
@@ -246,7 +251,7 @@ export interface TableProcessingOptions {
 export interface TableProcessingResult {
   tableId: string
   tableName: string
-  rollResult: number
+  rollResult: number | { finalResult: number; [key: string]: unknown }
   naturalRoll: number
   modifiersApplied: number
   selectedEntry: TableEntry
@@ -256,6 +261,12 @@ export interface TableProcessingResult {
   gotoResults?: TableProcessingResult[]
   timestamp: Date
   success: boolean
+  requiresGoto?: boolean
+  requiresChoice?: boolean
+  specialRulesApplied?: string[]
+  crossReferencesApplied?: string[]
+  rerolled?: boolean
+  manualSelection?: boolean
   warnings?: string[]
   errors?: string[]
 }

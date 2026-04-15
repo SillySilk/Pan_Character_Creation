@@ -1,11 +1,11 @@
 // Adulthood Events Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { AdulthoodTable as AdulthoodTableType } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
-import type { DiceRoll } from '../../../types/tables'
+import type { DiceRoll, Effect } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
 
 interface AdulthoodTableProps {
@@ -19,12 +19,11 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
   const [rolling, setRolling] = useState(false)
   const [currentRoll, setCurrentRoll] = useState<DiceRoll | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
-  const [modifierApplied, setModifierApplied] = useState(false)
+  const [_modifierApplied, setModifierApplied] = useState(false)
   const [showModifierDetails, setShowModifierDetails] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
-  const { getCurrentStep, createSnapshot } = useGenerationStore()
-  const currentStep = getCurrentStep()
+  const { createSnapshot } = useGenerationStore()
   
   const tableEngine = getGlobalTableEngine()
 
@@ -54,7 +53,7 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
   }, [tableId, tableEngine])
 
   const handleRoll = async () => {
-    if (!table) return
+    if (!table || !character) return
     
     setRolling(true)
     
@@ -70,7 +69,7 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
       setModifierApplied(solMod !== 0)
       
       // Process the table result with the calculated roll
-      const result = await tableEngine.processTable(table.id, character, undefined, totalRoll)
+      const result = tableEngine.processTable(table.id, character, { manualSelection: totalRoll })
       
       if (result.success && result.entry) {
         setSelectedEntry(result.entry)
@@ -111,7 +110,7 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
   }
 
   const handleManualSelect = async (entryId: string) => {
-    if (!table) return
+    if (!table || !character) return
     
     const entry = table.entries.find(e => e.id === entryId)
     if (!entry) return
@@ -159,10 +158,10 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
   }
 
   const getSolModValue = () => {
-    return character.activeModifiers?.solMod || 0
+    return character?.activeModifiers?.solMod || 0
   }
 
-  const getLifeStageIcon = (stage: string) => {
+  const getLifeStageIcon = (stage: string | undefined) => {
     switch (stage?.toLowerCase()) {
       case 'young adult': return '🌱'
       case 'adult': return '🌳'
@@ -307,7 +306,7 @@ export function AdulthoodTable({ tableId, onComplete }: AdulthoodTableProps) {
             <div className="space-y-3">
               <h5 className="font-semibold text-purple-800">Life Impact:</h5>
               <div className="grid gap-3">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: Effect, index: number) => (
                   <div key={index} className="bg-white p-3 rounded border">
                     {effect.type === 'modifier' && (
                       <div className="flex items-center justify-between">

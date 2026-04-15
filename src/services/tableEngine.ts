@@ -8,7 +8,6 @@ import type {
   DiceType
 } from '../types/tables'
 import type { Character } from '../types/character'
-import { DiceUtils } from '../utils/dice'
 import { modifierCalculator } from './modifierCalculator'
 
 export interface TableEngineConfig {
@@ -74,12 +73,14 @@ export class TableEngine {
    * Process a table roll with character context
    */
   processTable(
-    tableIdOrTable: string | Table, 
-    character: Partial<Character>, 
-    options: Partial<TableProcessingOptions> = {}
+    tableIdOrTable: string | Table,
+    character: Partial<Character>,
+    options: Partial<TableProcessingOptions> | string = {}
   ): TableProcessingResult {
+    // Normalize options - if a string was passed (entry ID), convert to empty options
+    const normalizedOptions: Partial<TableProcessingOptions> = typeof options === 'string' ? {} : (options ?? {})
     console.log('🔧 TableEngine: processTable called with:', { tableIdOrTable, character, options })
-    
+
     // Handle character validation
     if (!character) {
       console.log('❌ TableEngine: Invalid character data')
@@ -188,7 +189,7 @@ export class TableEngine {
       this.log(`Processing table: ${table.name} (${tableId})`)
       
       // Calculate modifiers
-      const modifiers = this.calculateModifiers(table, character, options.additionalModifiers)
+      const modifiers = this.calculateModifiers(table, character, normalizedOptions.additionalModifiers)
       
       // Process cross-references
       const crossReferencesApplied = this.processCrossReferences(table, character)
@@ -198,8 +199,8 @@ export class TableEngine {
       let rollResult: number
       let rerolled = false
       
-      if (options.manualSelection !== undefined) {
-        naturalRoll = options.manualSelection
+      if (normalizedOptions.manualSelection !== undefined) {
+        naturalRoll = normalizedOptions.manualSelection
         rollResult = naturalRoll + modifiers
         this.log(`Manual selection: ${naturalRoll}`)
       } else {
@@ -240,19 +241,19 @@ export class TableEngine {
       
       // Handle goto references
       let gotoResults: TableProcessingResult[] = []
-      if (entry.goto && !options.skipGoto) {
+      if (entry.goto && !normalizedOptions.skipGoto) {
         let gotoTableId: string | null = null
         
         if (typeof entry.goto === 'string') {
           gotoTableId = this.parseGotoReference(entry.goto)
-        } else if (typeof entry.goto === 'object' && entry.goto.tableId) {
-          gotoTableId = entry.goto.tableId
+        } else if (typeof entry.goto === 'object' && (entry.goto as { tableId?: string }).tableId) {
+          gotoTableId = (entry.goto as { tableId: string }).tableId
         }
         
         if (gotoTableId) {
           this.log(`Following goto reference: ${gotoTableId}`)
           const gotoResult = this.processTable(gotoTableId, character, {
-            ...options,
+            ...normalizedOptions,
             inheritedModifiers: modifiers
           })
           gotoResults.push(gotoResult)
@@ -277,7 +278,7 @@ export class TableEngine {
         specialRulesApplied: [],
         crossReferencesApplied,
         rerolled,
-        manualSelection: options.manualSelection !== undefined
+        manualSelection: normalizedOptions.manualSelection !== undefined
       }
 
       this.log(`Table processing completed: ${table.name}`)
@@ -308,7 +309,7 @@ export class TableEngine {
     }
     
     // For Youth tables, also apply social status modifier per Central Casting rules
-    if (table.category === 'youth' || table.category === 'Youth') {
+    if (table.category === 'youth') {
       const solModValue = characterModifiers['solMod'] || 0
       if (solModValue !== 0 && table.modifier !== 'solMod') {
         totalModifiers += solModValue
@@ -328,7 +329,7 @@ export class TableEngine {
   /**
    * Roll dice with modifiers
    */
-  private rollDice(diceType: DiceType, modifiers: number): number {
+  private rollDice(diceType: DiceType, _modifiers: number): number {
     // Simple dice rolling using Math.random for testability
     const diceMatch = diceType.match(/(\d*)d(\d+)/)
     if (!diceMatch) {
@@ -616,11 +617,6 @@ export class TableEngine {
       character.race = {
         name: raceName,
         type: effect.value.type || effect.value.name || effect.value,
-        description: effect.value.description || '',
-        abilities: effect.value.abilities || [],
-        languages: effect.value.languages || [],
-        size: effect.value.size || 'Medium',
-        speed: effect.value.speed || 30,
         events: character.race?.events || [],
         modifiers: racialModifiers
       }
@@ -647,7 +643,7 @@ export class TableEngine {
         }
       }
       
-      this.log(`Applied racial modifiers for ${raceName}:`, racialModifiers)
+      this.log(`Applied racial modifiers for ${raceName}: ${JSON.stringify(racialModifiers)}`)
     }
 
     return {
@@ -783,11 +779,13 @@ export class TableEngine {
       
       // Create the event object with proper period information
       const eventObj = {
+        id: `event_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         name: effect.value.name,
-        description: effect.value.description,
+        description: effect.value.description || '',
         age: effect.value.age,
         significance: effect.value.significance || 'Minor',
-        period: period,
+        category: 'Youth' as const,
+        period: period as import('../types/character').LifePeriod,
         result: effect.value.name  // For compatibility with character sheet
       }
       
@@ -1006,7 +1004,7 @@ export class TableEngine {
     return {
       tableId: table.id,
       tableName: table.name,
-      rollResult: undefined,
+      rollResult: 0,
       naturalRoll: 0,
       modifiersApplied: 0,
       selectedEntry: entry,
@@ -1091,9 +1089,10 @@ export class TableEngine {
     if (!table.crossReferences) return appliedRefs
     
     for (const crossRef of table.crossReferences) {
-      if (this.evaluateCrossReferenceCondition(crossRef.condition, character)) {
-        appliedRefs.push(crossRef.condition)
-        this.log(`Applied cross-reference: ${crossRef.condition}`)
+      const condition = typeof crossRef === 'string' ? crossRef : crossRef.condition
+      if (this.evaluateCrossReferenceCondition(condition, character)) {
+        appliedRefs.push(condition)
+        this.log(`Applied cross-reference: ${condition}`)
       }
     }
     

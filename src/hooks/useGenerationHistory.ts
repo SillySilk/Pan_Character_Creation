@@ -57,7 +57,7 @@ export function useGenerationHistory(
   const { character, loadCharacter } = useCharacterStore()
   const { getCurrentStep } = useGenerationStore()
   
-  const debounceTimer = useRef<number>()
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>()
   const lastCharacterRef = useRef<Character | null>(null)
 
   // Save current state to history
@@ -268,7 +268,7 @@ export function useAutoSaveHistory(
   const { enabled = true, debounceMs = 1000 } = options
   const { saveToHistory } = useGenerationHistory({ autoSave: false })
   const previousValue = useRef(value)
-  const debounceTimer = useRef<number>()
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
     if (!enabled) return

@@ -1,6 +1,6 @@
 // Adulthood Event Selection Component - Simplified to follow Youth pattern
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { AdulthoodTable } from './AdulthoodTable'
@@ -11,14 +11,15 @@ interface AdulthoodEventSelectorProps {
 
 export function AdulthoodEventSelector({ onComplete }: AdulthoodEventSelectorProps) {
   const [selectedAdultEvent, setSelectedAdultEvent] = useState<any>(null)
-  const [showContinueButton, setShowContinueButton] = useState(false)
+  const [_showContinueButton, setShowContinueButton] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
   const { nextStep } = useGenerationStore()
 
   // Check if character already has adult events (state restoration)
   useEffect(() => {
-    console.log('🟡 AdulthoodEventSelector: Character check:', { 
+    if (!character) return
+    console.log('🟡 AdulthoodEventSelector: Character check:', {
       adulthoodEvents: character.adulthoodEvents
     })
     
@@ -189,11 +190,11 @@ export function AdulthoodEventSelector({ onComplete }: AdulthoodEventSelectorPro
                     </span>
                   </div>
                 )}
-                {character?.occupations?.filter(occ => occ.type === 'hobby').length > 0 && (
+                {(character?.occupations?.filter(occ => occ.type === 'hobby')?.length ?? 0) > 0 && (
                   <div>
                     <span className="text-green-700 font-medium">Hobbies:</span>
                     <span className="ml-1 text-green-600">
-                      {character.occupations.filter(occ => occ.type === 'hobby').map(h => h.result).filter(Boolean).join(', ') || 'Unknown'}
+                      {character?.occupations?.filter(occ => occ.type === 'hobby').map(h => h.result).filter(Boolean).join(', ') || 'Unknown'}
                     </span>
                   </div>
                 )}

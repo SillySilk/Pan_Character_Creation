@@ -1,6 +1,6 @@
 // Youth Event Selection Component - Simplified to follow Heritage pattern
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { YouthTable } from './YouthTable'
@@ -12,23 +12,24 @@ interface YouthEventSelectorProps {
 export function YouthEventSelector({ onComplete }: YouthEventSelectorProps) {
   const [selectedChildhoodEvent, setSelectedChildhoodEvent] = useState<any>(null)
   const [selectedAdolescenceEvent, setSelectedAdolescenceEvent] = useState<any>(null)
-  const [showContinueButton, setShowContinueButton] = useState(false)
+  const [, setShowContinueButton] = useState(false)
   
   const { character } = useCharacterStore()
   const { nextStep } = useGenerationStore()
 
   // Check if character already has youth events (state restoration)
   useEffect(() => {
-    console.log('🟡 YouthEventSelector: Character check:', { 
+    if (!character) return
+    console.log('🟡 YouthEventSelector: Character check:', {
       youthEvents: character.youthEvents
     })
     
     if (character.youthEvents && Array.isArray(character.youthEvents)) {
-      const childhood = character.youthEvents.find(event => 
-        event.category === 'childhood' || (event.ageRange && event.ageRange.max <= 12)
+      const childhood = character.youthEvents.find(event =>
+        event.eventType === 'childhood' || (event.ageRange && (event.ageRange.max ?? 0) <= 12)
       )
-      const adolescence = character.youthEvents.find(event => 
-        event.category === 'adolescence' || (event.ageRange && event.ageRange.min >= 13)
+      const adolescence = character.youthEvents.find(event =>
+        event.eventType === 'adolescence' || (event.ageRange && (event.ageRange.min ?? 99) >= 13)
       )
       
       if (childhood) {
@@ -282,29 +283,33 @@ export function YouthEventSelector({ onComplete }: YouthEventSelectorProps) {
             )}
             
             {/* Personality Traits */}
-            {character && character.personalityTraits && character.personalityTraits.length > 0 && (
-              <div className="mb-4">
-                <h5 className="font-medium text-gray-700 mb-2">Personality Traits</h5>
-                <div className="flex flex-wrap gap-2">
-                  {character.personalityTraits.slice(0, 6).map((trait, index) => (
-                    <div key={index} className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">
-                      <span>
-                        {trait.type === 'Lightside' ? '😇' : 
-                         trait.type === 'Darkside' ? '😈' : 
-                         trait.type === 'Neutral' ? '😐' : 
-                         trait.type === 'Exotic' ? '✨' : '❓'}
-                      </span>
-                      <span className="font-medium">{trait.name}</span>
-                    </div>
-                  ))}
-                  {character.personalityTraits.length > 6 && (
-                    <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
-                      +{character.personalityTraits.length - 6} more
-                    </div>
-                  )}
+            {character && character.personalityTraits && (() => {
+              const pt = character.personalityTraits as unknown as { lightside?: {type?:string;name?:string}[], neutral?: {type?:string;name?:string}[], darkside?: {type?:string;name?:string}[], exotic?: {type?:string;name?:string}[] }
+              const allTraits = [...(pt.lightside||[]), ...(pt.neutral||[]), ...(pt.darkside||[]), ...(pt.exotic||[])]
+              return allTraits.length > 0 ? (
+                <div className="mb-4">
+                  <h5 className="font-medium text-gray-700 mb-2">Personality Traits</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {allTraits.slice(0, 6).map((trait, index) => (
+                      <div key={index} className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">
+                        <span>
+                          {trait.type === 'Lightside' ? '😇' :
+                           trait.type === 'Darkside' ? '😈' :
+                           trait.type === 'Neutral' ? '😐' :
+                           trait.type === 'Exotic' ? '✨' : '❓'}
+                        </span>
+                        <span className="font-medium">{trait.name}</span>
+                      </div>
+                    ))}
+                    {allTraits.length > 6 && (
+                      <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
+                        +{allTraits.length - 6} more
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null
+            })()}
             
             {/* Skills */}
             {character && character.skills && Object.keys(character.skills).length > 0 && (

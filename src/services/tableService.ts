@@ -195,30 +195,6 @@ export class TableService {
     return tables
   }
 
-  /**
-   * Get mock table ID for category
-   */
-  private getMockTableId(category: TableCategory): string {
-    const baseIds: Record<string, string> = {
-      '100s': '101',
-      '200s': '208', 
-      '300s': '309',
-      '400s': '419',
-      '500s': '501',
-      '600s': '601',
-      '700s': '701',
-      '800s': '801',
-      'heritage': '101',
-      'youth': '208',
-      'occupations': '309',
-      'adulthood': '419',
-      'personality': '501',
-      'miscellaneous': '601',
-      'contacts': '701',
-      'special': '801'
-    }
-    return baseIds[category] || '101'
-  }
 
   /**
    * Clear all cached data

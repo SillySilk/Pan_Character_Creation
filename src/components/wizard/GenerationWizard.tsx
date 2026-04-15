@@ -1,22 +1,19 @@
-// Generation Wizard Component for PanCasting
+// Background Generator — Central Casting table-driven background steps.
+// Character sheet building (identity/skills/feats/equipment/languages) lives in
+// DNDCharacterSheet.tsx; this wizard runs only after the sheet is ready.
 
 import React, { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { useGenerationStore } from '../../stores/generationStore'
-import { RaceSelector } from '../tables/heritage'
-import { YouthEventSelector } from '../tables/youth'
-import { OccupationSelector } from '../tables/Occupations'
-import { AdulthoodEventSelector } from '../tables/adulthood'
-import { PersonalitySelector } from '../tables/Personality'
 import { StreamlinedYouthSelector } from '../tables/youth/StreamlinedYouthSelector'
-import { StreamlinedOccupationSelector } from '../tables/occupations/StreamlinedOccupationSelector'
+import { StreamlinedOccupationSelector } from '../tables/Occupations/StreamlinedOccupationSelector'
 import { StreamlinedAdulthoodSelector } from '../tables/adulthood/StreamlinedAdulthoodSelector'
-import { StreamlinedPersonalitySelector } from '../tables/personality/StreamlinedPersonalitySelector'
+import { StreamlinedPersonalitySelector } from '../tables/Personality/StreamlinedPersonalitySelector'
 import { MiscellaneousSelector } from '../tables/Miscellaneous'
 import { ContactSelector } from '../tables/Contacts'
 import { SpecialSelector } from '../tables/Special'
-import { MarkdownCharacterViewer } from '../character/MarkdownCharacterViewer'
-import { ClassSelector } from '../dnd/ClassSelector'
+import { CharacterPreview } from '../ui/CharacterPreview'
+import { PrintableCharacterSheet } from '../dnd/PrintableCharacterSheet'
 import { UndoRedoManager } from './UndoRedoManager'
 import { useGenerationHistory } from '../../hooks/useGenerationHistory'
 
@@ -26,10 +23,7 @@ interface GenerationWizardProps {
   className?: string
 }
 
-type GenerationStep = 
-  | 'welcome'
-  | 'heritage'
-  | 'class'
+type GenerationStep =
   | 'youth'
   | 'occupations'
   | 'adulthood'
@@ -48,10 +42,66 @@ interface StepConfig {
   component?: React.ComponentType<any>
 }
 
+// Phase grouping for the nav — purely visual, does not affect the state machine
+const PHASES = [
+  {
+    id: 'early',
+    label: 'Early Life',
+    icon: '🌱',
+    stepIds: ['youth', 'occupations', 'adulthood'],
+  },
+  {
+    id: 'inner',
+    label: 'Inner Life',
+    icon: '💭',
+    stepIds: ['personality', 'miscellaneous', 'contacts', 'special'],
+  },
+  {
+    id: 'review',
+    label: 'Review',
+    icon: '✨',
+    stepIds: ['finalize', 'complete'],
+  },
+] as const
+
+// Single clickable step pill inside a phase card
+function StepChip({
+  step,
+  status,
+  canNavigate,
+  onClick,
+}: {
+  step: StepConfig
+  status: 'completed' | 'current' | 'pending'
+  canNavigate: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={() => canNavigate && onClick()}
+      disabled={!canNavigate}
+      title={step.description}
+      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
+        status === 'completed'
+          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+          : status === 'current'
+          ? 'bg-amber-200 text-amber-900 border border-amber-500 shadow-sm'
+          : canNavigate
+          ? 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-200'
+      }`}
+    >
+      <span className="text-sm">{step.icon}</span>
+      <span>{step.title}</span>
+      {status === 'completed' && <span className="text-green-600">✓</span>}
+    </button>
+  )
+}
+
 export function GenerationWizard({ onComplete, onCancel, className = '' }: GenerationWizardProps) {
-  const [currentStep, setCurrentStep] = useState<GenerationStep>('welcome')
+  const [currentStep, setCurrentStep] = useState<GenerationStep>('youth')
   const [completedSteps, setCompletedSteps] = useState<Set<GenerationStep>>(new Set())
-  const { character, createNewCharacter } = useCharacterStore()
+  const { character, createNewCharacter, finalizeCharacter } = useCharacterStore()
   const { 
     resetGeneration 
   } = useGenerationStore()
@@ -64,26 +114,6 @@ export function GenerationWizard({ onComplete, onCancel, className = '' }: Gener
   })
 
   const steps: StepConfig[] = [
-    {
-      id: 'welcome',
-      title: 'Welcome',
-      description: 'Begin your character\'s journey',
-      icon: '🌟'
-    },
-    {
-      id: 'heritage',
-      title: 'Heritage & Birth',
-      description: 'Determine race and cultural background',
-      icon: '🏰',
-      component: RaceSelector
-    },
-    {
-      id: 'class',
-      title: 'D&D Class Selection',
-      description: 'Choose your character class for D&D 3.5',
-      icon: '⚔️',
-      component: ClassSelector
-    },
     {
       id: 'youth',
       title: 'Youth Development',
@@ -188,8 +218,7 @@ export function GenerationWizard({ onComplete, onCancel, className = '' }: Gener
 
   const handleRestart = () => {
     resetGeneration()
-    createNewCharacter()
-    setCurrentStep('welcome')
+    setCurrentStep('youth')
     setCompletedSteps(new Set())
   }
 
@@ -220,13 +249,13 @@ export function GenerationWizard({ onComplete, onCancel, className = '' }: Gener
     <div className={`min-h-screen bg-gradient-to-br from-parchment-100 to-parchment-200 ${className}`}>
       {/* Header */}
       <div className="bg-white border-b-2 border-amber-600 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-screen-2xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="text-3xl">🎲</div>
               <div>
-                <h1 className="text-2xl font-bold text-amber-800">PanCasting Generator</h1>
-                <p className="text-parchment-700">Create your character's unique story</p>
+                <h1 className="text-2xl font-bold text-amber-800">Background Generator</h1>
+                <p className="text-parchment-700">Roll your character's story through the Central Casting tables</p>
               </div>
             </div>
             
@@ -260,7 +289,7 @@ export function GenerationWizard({ onComplete, onCancel, className = '' }: Gener
 
       {/* Progress Bar */}
       <div className="bg-amber-100 border-b border-amber-200">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="max-w-screen-2xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-amber-800">
               Step {getCurrentStepIndex() + 1} of {steps.length}
@@ -278,109 +307,123 @@ export function GenerationWizard({ onComplete, onCancel, className = '' }: Gener
         </div>
       </div>
 
-      {/* Step Navigation */}
-      <div className="bg-white border-b border-gray-200 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-1 py-2">
-            {steps.map((step, _index) => {
-              const status = getStepStatus(step.id)
-              const canNavigate = canNavigateToStep(step.id)
-              
+      {/* Step Navigation - grouped into 3 phases */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-screen-2xl mx-auto px-6 py-3">
+          <div className="flex items-stretch gap-3">
+            {PHASES.map(phase => {
+              const phaseSteps = steps.filter(s => (phase.stepIds as readonly string[]).includes(s.id))
+              if (phaseSteps.length === 0) return null
+              const allDone = phaseSteps.every(s => getStepStatus(s.id) === 'completed')
+              const anyCurrent = phaseSteps.some(s => getStepStatus(s.id) === 'current')
+              const cardClasses = anyCurrent
+                ? 'border-amber-500 bg-amber-50'
+                : allDone
+                ? 'border-green-400 bg-green-50'
+                : 'border-parchment-300 bg-white'
+
               return (
-                <button
-                  key={step.id}
-                  onClick={() => canNavigate && handleStepNavigation(step.id)}
-                  disabled={!canNavigate}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                    status === 'completed'
-                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                      : status === 'current'
-                      ? 'bg-amber-100 text-amber-800 border-2 border-amber-400'
-                      : canNavigate
-                      ? 'text-gray-600 hover:bg-gray-100'
-                      : 'text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  <span className="text-lg">{step.icon}</span>
-                  <span>{step.title}</span>
-                  {status === 'completed' && <span className="text-green-600">✓</span>}
-                </button>
+                <div key={phase.id} className={`flex-1 rounded-lg border-2 px-3 py-2 ${cardClasses}`}>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className="text-base">{phase.icon}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                      {phase.label}
+                    </span>
+                    {allDone && <span className="text-green-600 text-xs ml-auto">✓ done</span>}
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {phaseSteps.map(step => (
+                      <StepChip
+                        key={step.id}
+                        step={step}
+                        status={getStepStatus(step.id)}
+                        canNavigate={canNavigateToStep(step.id)}
+                        onClick={() => handleStepNavigation(step.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
               )
             })}
           </div>
         </div>
       </div>
 
-      {/* Persistent Character Sheet - Mobile/Tablet View */}
+      {/* Persistent Character Preview - Mobile/Tablet View */}
       <div className="lg:hidden bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <MarkdownCharacterViewer 
-            collapsible={true}
-            className="mb-0"
-          />
+        <div className="max-w-screen-2xl mx-auto px-6 py-4">
+          <details className="group">
+            <summary className="cursor-pointer text-sm font-semibold text-amber-800 mb-2 list-none flex items-center gap-2">
+              <span className="group-open:rotate-90 transition-transform">▶</span>
+              Character Preview
+            </summary>
+            <div className="mt-2">
+              <CharacterPreview character={character ?? {}} compact />
+            </div>
+          </details>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="grid lg:grid-cols-3 gap-6">
+        <div className="max-w-screen-2xl mx-auto px-6 py-6">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
             {/* Step Content */}
-            <div className="lg:col-span-2">
-              {currentStep === 'welcome' && (
-                <WelcomeStep onNext={handleStepComplete} />
-              )}
-              
-              {currentStep === 'heritage' && (
-                <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
-                  <RaceSelector onComplete={handleStepComplete} />
-                </div>
-              )}
-              
+            <div>
               {currentStep === 'youth' && (
-                <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
+                <div className="bg-white rounded-lg p-3">
                   <StreamlinedYouthSelector onStepComplete={handleStepComplete} />
                 </div>
               )}
               
               {currentStep === 'occupations' && (
-                <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
+                <div className="bg-white rounded-lg p-3">
                   <StreamlinedOccupationSelector onStepComplete={handleStepComplete} />
                 </div>
               )}
               
               {currentStep === 'adulthood' && (
-                <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
+                <div className="bg-white rounded-lg p-3">
                   <StreamlinedAdulthoodSelector onStepComplete={handleStepComplete} />
                 </div>
               )}
               
               {currentStep === 'personality' && (
-                <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
+                <div className="bg-white rounded-lg p-3">
                   <StreamlinedPersonalitySelector onStepComplete={handleStepComplete} />
                 </div>
               )}
               
               {currentStep === 'miscellaneous' && (
-                <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
+                <div className="bg-white rounded-lg p-3">
                   <MiscellaneousSelector onComplete={handleStepComplete} />
                 </div>
               )}
               
               {currentStep === 'contacts' && (
-                <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
+                <div className="bg-white rounded-lg p-3">
                   <ContactSelector onComplete={handleStepComplete} />
                 </div>
               )}
               
               {currentStep === 'special' && (
-                <div className="bg-white rounded-lg border-2 border-amber-600 p-6">
+                <div className="bg-white rounded-lg p-3">
                   <SpecialSelector onComplete={handleStepComplete} />
                 </div>
               )}
               
               {currentStep === 'finalize' && (
-                <FinalizeStep onComplete={handleStepComplete} />
+                <div className="bg-white rounded-lg p-3">
+                  <PrintableCharacterSheet onBack={() => setCurrentStep('special')} />
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={() => { finalizeCharacter(); handleStepComplete() }}
+                      className="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 font-medium"
+                    >
+                      Finalize &amp; Complete Character
+                    </button>
+                  </div>
+                </div>
               )}
               
               {currentStep === 'complete' && (
@@ -388,12 +431,10 @@ export function GenerationWizard({ onComplete, onCancel, className = '' }: Gener
               )}
             </div>
 
-            {/* Character Summary Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-6">
-                <MarkdownCharacterViewer 
-                  collapsible={true}
-                />
+            {/* Character Preview Sidebar */}
+            <div className="hidden lg:block">
+              <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto pr-1">
+                <CharacterPreview character={character ?? {}} />
               </div>
             </div>
           </div>
@@ -403,290 +444,7 @@ export function GenerationWizard({ onComplete, onCancel, className = '' }: Gener
   )
 }
 
-// Welcome Step Component
-function WelcomeStep({ onNext }: { onNext: () => void }) {
-  const { character, rollAbilityScores } = useCharacterStore()
-  const [statsRolled, setStatsRolled] = useState(false)
-  
-  // Check if stats have been rolled
-  useEffect(() => {
-    if (character && character.strength && character.dexterity && character.constitution && 
-        character.intelligence && character.wisdom && character.charisma) {
-      setStatsRolled(true)
-    }
-  }, [character])
-  
-  const handleRollStats = () => {
-    rollAbilityScores()
-    setStatsRolled(true)
-  }
-  
-  return (
-    <div className="bg-white rounded-lg border-2 border-amber-600 p-8 text-center">
-      <div className="text-6xl mb-6">🎭</div>
-      <h2 className="text-3xl font-bold text-amber-800 mb-4">Welcome to PanCasting</h2>
-      <p className="text-parchment-700 text-lg mb-6 max-w-2xl mx-auto">
-        Create a unique character with a rich backstory through table-driven generation. 
-        Watch as dice rolls shape your character's life experiences, creating balanced strengths 
-        and limitations that tell a compelling story.
-      </p>
 
-      {/* Character Creation Philosophy */}
-      <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-6 mb-6">
-        <h3 className="text-xl font-bold text-emerald-800 mb-3">🎲 Balanced Character Development</h3>
-        <div className="text-left max-w-2xl mx-auto">
-          <div className="text-sm text-emerald-700 space-y-2">
-            <p className="font-medium">Every roll shapes your character's unique story:</p>
-            <ul className="space-y-1 text-xs ml-4">
-              <li>• <strong>Realistic Tradeoffs:</strong> Specialization creates both strengths and limitations</li>
-              <li>• <strong>Emergent Narrative:</strong> Random events build meaningful character backgrounds</li>
-              <li>• <strong>Balanced Growth:</strong> No overpowered characters - every strength has a cost</li>
-              <li>• <strong>Dice-Driven:</strong> Embrace the excitement of random generation</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      
-      <div className="grid md:grid-cols-3 gap-4 mb-8 text-left">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="text-2xl mb-2">🏰</div>
-          <h3 className="font-semibold text-blue-800 mb-1">Rich Heritage</h3>
-          <p className="text-blue-600 text-sm">Determine race, culture, and birth circumstances</p>
-        </div>
-        <div className="bg-green-50 p-4 rounded-lg">
-          <div className="text-2xl mb-2">⚔️</div>
-          <h3 className="font-semibold text-green-800 mb-1">Life Events</h3>
-          <p className="text-green-600 text-sm">Experience formative events from youth to adulthood</p>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <div className="text-2xl mb-2">🎲</div>
-          <h3 className="font-semibold text-purple-800 mb-1">Random Generation</h3>
-          <p className="text-purple-600 text-sm">Let the dice create surprising and memorable characters</p>
-        </div>
-      </div>
-      
-      {/* Step 1: Roll Stats (Primary Action) */}
-      {!statsRolled ? (
-        <div className="space-y-4">
-          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
-            <h3 className="text-xl font-bold text-blue-800 mb-3">🎲 Step 1: Roll Your Character's Abilities</h3>
-            <p className="text-blue-700 text-sm mb-4">
-              Start by rolling your character's six ability scores (Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma). 
-              These form the foundation of your character and determine their natural talents and limitations.
-            </p>
-            <button
-              onClick={handleRollStats}
-              className="w-full px-8 py-4 bg-blue-600 text-white rounded-lg text-xl font-bold hover:bg-blue-700 transition-colors shadow-lg"
-            >
-              🎲 Roll Ability Scores (3d6 each)
-            </button>
-          </div>
-          <p className="text-gray-600 text-sm">Roll your stats first to begin character creation</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Show rolled stats */}
-          <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-green-800 mb-3">✅ Ability Scores Rolled!</h3>
-            <div className="grid grid-cols-3 gap-4 text-sm mb-4">
-              <div><strong>STR:</strong> {character?.strength || 0}</div>
-              <div><strong>DEX:</strong> {character?.dexterity || 0}</div>
-              <div><strong>CON:</strong> {character?.constitution || 0}</div>
-              <div><strong>INT:</strong> {character?.intelligence || 0}</div>
-              <div><strong>WIS:</strong> {character?.wisdom || 0}</div>
-              <div><strong>CHA:</strong> {character?.charisma || 0}</div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleRollStats}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
-              >
-                🎲 Re-roll Stats
-              </button>
-              <button
-                onClick={onNext}
-                className="flex-1 px-8 py-3 bg-amber-600 text-white rounded-lg text-lg font-medium hover:bg-amber-700 transition-colors"
-              >
-                Begin Character Creation →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Placeholder Step Component for incomplete sections
-function PlaceholderStep({ step, onNext }: { step: StepConfig; onNext: () => void }) {
-  return (
-    <div className="bg-white rounded-lg border-2 border-gray-300 p-8 text-center">
-      <div className="text-6xl mb-4">{step.icon}</div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">{step.title}</h2>
-      <p className="text-gray-600 mb-6">{step.description}</p>
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-        <p className="text-yellow-800 text-sm">
-          This section is not yet implemented. Click Continue to proceed to the next step.
-        </p>
-      </div>
-      <button
-        onClick={onNext}
-        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-      >
-        Continue
-      </button>
-    </div>
-  )
-}
-
-// Finalize Step Component
-function FinalizeStep({ onComplete }: { onComplete: () => void }) {
-  const { character, finalizeCharacter, getCharacterSummary } = useCharacterStore()
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [finalizationError, setFinalizationError] = useState<string | null>(null)
-  
-  const handleFinalize = async () => {
-    if (!character) return
-    
-    setIsProcessing(true)
-    setFinalizationError(null)
-    
-    try {
-      const success = finalizeCharacter()
-      
-      if (success) {
-        console.log('🎉 Character successfully finalized and added to roster')
-        onComplete()
-      } else {
-        setFinalizationError('Failed to finalize character. Please try again.')
-      }
-    } catch (error) {
-      console.error('Finalization error:', error)
-      setFinalizationError('An unexpected error occurred during finalization.')
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-  
-  const getCompletionStats = () => {
-    if (!character) return { completed: 0, total: 8 }
-    
-    let completed = 0
-    const total = 8
-    
-    if (character.race?.name) completed++
-    if (character.youthEvents?.length > 0) completed++
-    if (character.occupations?.length > 0) completed++
-    if (character.adulthoodEvents?.length > 0) completed++
-    if (character.personalityTraits && (
-      character.personalityTraits.lightside?.length > 0 ||
-      character.personalityTraits.neutral?.length > 0 ||
-      character.personalityTraits.darkside?.length > 0
-    )) completed++
-    if (character.miscellaneousEvents?.length > 0) completed++
-    if ((character.npcs?.length || 0) + (character.companions?.length || 0) + (character.rivals?.length || 0) > 0) completed++
-    if ((character.gifts?.length || 0) + (character.legacies?.length || 0) + (character.specialItems?.length || 0) > 0) completed++
-    
-    return { completed, total }
-  }
-  
-  const { completed, total } = getCompletionStats()
-  const completionPercentage = Math.round((completed / total) * 100)
-  
-  return (
-    <div className="bg-white rounded-lg border-2 border-green-600 p-8">
-      <div className="text-center mb-6">
-        <div className="text-6xl mb-4">🏁</div>
-        <h2 className="text-3xl font-bold text-green-800 mb-4">Character Complete!</h2>
-        <p className="text-green-700 mb-6">
-          Your character's story has been generated. Review their details and finalize to save to your character roster.
-        </p>
-      </div>
-      
-      <div className="bg-green-50 rounded-lg p-6 mb-6">
-        <h3 className="font-semibold text-green-800 mb-3">Character Summary</h3>
-        <div className="grid md:grid-cols-2 gap-4 text-sm mb-4">
-          <div>
-            <span className="font-medium">Name:</span> {character?.name || 'Unnamed Character'}
-          </div>
-          <div>
-            <span className="font-medium">Race:</span> {character?.race?.name || 'Unknown'}
-          </div>
-          <div>
-            <span className="font-medium">Culture:</span> {character?.culture?.name || 'Unknown'}
-          </div>
-          <div>
-            <span className="font-medium">Social Status:</span> {character?.socialStatus?.level || 'Unknown'}
-          </div>
-        </div>
-        
-        {/* Completion Progress */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-green-800">Generation Progress</span>
-            <span className="text-sm text-green-700">{completionPercentage}% Complete</span>
-          </div>
-          <div className="w-full bg-green-200 rounded-full h-2">
-            <div 
-              className="bg-green-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${completionPercentage}%` }}
-            />
-          </div>
-          <div className="text-xs text-green-600 mt-1">
-            {completed} of {total} generation steps completed
-          </div>
-        </div>
-        
-        {/* Character Summary */}
-        <div className="text-xs text-gray-600">
-          {getCharacterSummary()}
-        </div>
-      </div>
-      
-      {finalizationError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-2 text-red-800">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            <span className="font-medium">Finalization Error</span>
-          </div>
-          <p className="text-red-700 text-sm mt-1">{finalizationError}</p>
-        </div>
-      )}
-      
-      <div className="text-center">
-        <button
-          onClick={handleFinalize}
-          disabled={isProcessing}
-          className={`px-8 py-3 rounded-lg text-lg font-medium transition-colors ${
-            isProcessing
-              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
-        >
-          {isProcessing ? (
-            <div className="flex items-center gap-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Finalizing...
-            </div>
-          ) : (
-            'Save to Character Roster'
-          )}
-        </button>
-      </div>
-      
-      <div className="text-center mt-4">
-        <p className="text-sm text-gray-600">
-          This will save your character to your personal roster where you can view, edit, and export them later.
-        </p>
-      </div>
-    </div>
-  )
-}
 
 // Complete Step Component
 function CompleteStep({ onFinish }: { onFinish?: () => void }) {

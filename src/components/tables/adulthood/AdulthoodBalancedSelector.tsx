@@ -5,12 +5,10 @@ import React, { useState } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { tableEngine } from '../../../services/tableEngine'
 import balancedAdulthoodEventsTable from '../../../data/tables/adulthood-balanced'
-import { TradeoffPreview, BalanceWarningSystem } from '../../ui'
+import { BalanceWarningSystem } from '../../ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/Card'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
-import type { Character } from '../../../types/character'
-import type { Effect } from '../../../types/tables'
 
 interface AdulthoodBalancedSelectorProps {
   onStepComplete?: () => void

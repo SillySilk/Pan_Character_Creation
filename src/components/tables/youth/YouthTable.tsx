@@ -1,11 +1,11 @@
 // Youth Events Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { YouthTable as YouthTableType } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
-import type { DiceRoll } from '../../../types/tables'
+import type { DiceRoll, Effect } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
 
 interface YouthTableProps {
@@ -23,7 +23,7 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
   const [showFullTable, setShowFullTable] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
-  const { currentStep } = useGenerationStore()
+  useGenerationStore()
   
   // Use global singleton TableEngine
   const tableEngine = getGlobalTableEngine()
@@ -48,7 +48,7 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
   }, [tableId, tableEngine])
 
   const handleRoll = async () => {
-    if (!table) return
+    if (!table || !character) return
     
     setRolling(true)
     
@@ -97,8 +97,8 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
   }
 
   const handleManualSelect = async (entryId: string) => {
-    if (!table) return
-    
+    if (!table || !character) return
+
     const entry = table.entries.find(e => e.id === entryId)
     if (!entry) return
     
@@ -119,8 +119,8 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
     
     // Process effects
     try {
-      const result = await tableEngine.processTable(table.id, character, {
-        manualSelection: entry.id
+      const result = tableEngine.processTable(table.id, character, {
+        manualSelection: entry.rollRange[0]
       })
       
       if (result.success && result.character) {
@@ -249,7 +249,7 @@ export function YouthTable({ tableId, eventType, onComplete }: YouthTableProps) 
             <div className="space-y-2">
               <h5 className={`font-semibold ${colors.text}`}>Effects:</h5>
               <div className="space-y-2">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: Effect, index: number) => (
                   <div key={index} className="p-2 bg-white rounded border">
                     {effect.type === 'trait' && (
                       <div className="flex items-center gap-2">

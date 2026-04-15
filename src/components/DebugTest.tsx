@@ -1,5 +1,4 @@
 // Debug test component
-import React from 'react'
 import { tableEngine } from '../services/tableEngine'
 import { childhoodEventsTable } from '../data/tables/youth'
 
@@ -16,7 +15,7 @@ export function DebugTest() {
       const testCharacter = {
         race: { name: 'Human' },
         activeModifiers: { cuMod: 1 }
-      }
+      } as any
       
       // Process table
       const result = tableEngine.processTable(childhoodEventsTable, testCharacter)

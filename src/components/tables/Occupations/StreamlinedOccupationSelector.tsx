@@ -1,7 +1,7 @@
 // Streamlined Occupation Selector - Automatic dice rolling with excitement
 // No accept/decline buttons - pure dice-driven character development
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { tableEngine } from '../../../services/tableEngine'
 import { balancedApprenticeshipsTable } from '../../../data/tables/occupations-balanced'
@@ -9,7 +9,6 @@ import { BalanceWarningSystem } from '../../ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/Card'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
-import type { Character } from '../../../types/character'
 
 interface StreamlinedOccupationSelectorProps {
   onStepComplete?: () => void
@@ -134,7 +133,7 @@ export function StreamlinedOccupationSelector({ onStepComplete }: StreamlinedOcc
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
-            <Badge variant={phase === 'complete' ? 'success' : phase === 'rolling' ? 'default' : 'secondary'}>
+            <Badge variant={(phase as string) === 'complete' ? 'success' : phase === 'rolling' ? 'default' : 'secondary'}>
               Apprenticeship Training
             </Badge>
             <Badge variant="outline">Skill Specialization</Badge>
@@ -196,7 +195,7 @@ export function StreamlinedOccupationSelector({ onStepComplete }: StreamlinedOcc
         </Card>
       )}
 
-      {phase === 'complete' && (
+      {(phase as string) === 'complete' && (
         <Card className="border-green-300 bg-green-50">
           <CardContent className="text-center py-6">
             <div className="text-4xl mb-3">🎉</div>

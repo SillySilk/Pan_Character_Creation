@@ -10,11 +10,16 @@ function App() {
   const [currentView, setCurrentView] = useState<'landing' | 'generate' | 'manage' | 'demo' | 'dnd-sheet'>('landing')
 
   const handleStartGeneration = () => {
+    // Always go through the character sheet first so race/class are set before background rolls
+    setCurrentView('dnd-sheet')
+  }
+
+  const handleStartBackgroundFromSheet = () => {
     setCurrentView('generate')
   }
 
   const handleGenerationComplete = () => {
-    setCurrentView('manage')
+    setCurrentView('dnd-sheet') // Return to sheet to see the live updates
   }
 
   const handleManageCharacters = () => {
@@ -108,13 +113,13 @@ function App() {
                 ⚔️ D&D 3.5 Character Sheet
               </h1>
               <div className="flex gap-3">
-                <button 
-                  onClick={handleStartGeneration}
-                  className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                <button
+                  onClick={handleManageCharacters}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Add Background Story
+                  📚 Manage Characters
                 </button>
-                <button 
+                <button
                   onClick={handleBackToLanding}
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
@@ -122,7 +127,7 @@ function App() {
                 </button>
               </div>
             </div>
-            <DNDCharacterSheet />
+            <DNDCharacterSheet onStartBackground={handleStartBackgroundFromSheet} />
           </div>
         </div>
       </ErrorBoundary>

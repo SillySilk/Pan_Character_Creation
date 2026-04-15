@@ -1,6 +1,6 @@
 // Personality & Values Selection Component - Simplified to follow Youth pattern
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { PersonalityTable } from './PersonalityTable'
@@ -12,31 +12,33 @@ interface PersonalitySelectorProps {
 export function PersonalitySelector({ onComplete }: PersonalitySelectorProps) {
   const [selectedCoreValues, setSelectedCoreValues] = useState<any>(null)
   const [selectedPersonalityTraits, setSelectedPersonalityTraits] = useState<any>(null)
-  const [showContinueButton, setShowContinueButton] = useState(false)
-  
+  const [, setShowContinueButton] = useState(false)
+
   const { character, updateCharacter } = useCharacterStore()
   const { nextStep } = useGenerationStore()
 
-  // Simplified: just two tables
-  const tables = [
-    { id: '501', name: 'Core Values', category: 'values' },
-    { id: '502', name: 'Personality Traits', category: 'traits' }
-  ]
-
   // Check if character already has personality values (state restoration)
   useEffect(() => {
-    console.log('🟡 PersonalitySelector: Character check:', { 
+    if (!character) return
+    console.log('🟡 PersonalitySelector: Character check:', {
       values: character.values,
       personalityTraits: character.personalityTraits
     })
-    
+
     if (character.values) {
       console.log('🟡 PersonalitySelector: Setting selected core values:', character.values)
       setSelectedCoreValues({ result: character.values.mostValuedConcept || 'Core Values Selected', ...character.values })
     }
-    
-    if (character.personalityTraits && character.personalityTraits.length > 0) {
-      const trait = character.personalityTraits[0]
+
+    const allTraits = character.personalityTraits
+      ? [
+          ...((character.personalityTraits as unknown as { lightside?: unknown[] }).lightside || []),
+          ...((character.personalityTraits as unknown as { neutral?: unknown[] }).neutral || []),
+          ...((character.personalityTraits as unknown as { darkside?: unknown[] }).darkside || []),
+        ] as Array<{ name?: string; result?: string; [key: string]: unknown }>
+      : []
+    if (allTraits.length > 0) {
+      const trait = allTraits[0]
       console.log('🟡 PersonalitySelector: Setting selected personality traits:', trait)
       setSelectedPersonalityTraits({ result: trait.name || trait.result, ...trait })
     }

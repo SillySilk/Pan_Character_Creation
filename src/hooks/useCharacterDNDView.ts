@@ -68,7 +68,7 @@ export function useCharacterDNDView({
     // Has skills or other convertible data
     const hasConvertibleData = character.skills && character.skills.length > 0
 
-    return hasAbilityScores || hasConvertibleData
+    return !!(hasAbilityScores || hasConvertibleData)
   }, [character])
 
   // Check if there are unsaved changes that need re-conversion

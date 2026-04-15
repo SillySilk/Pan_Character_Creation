@@ -1,6 +1,6 @@
 // Special Items Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { TableProcessingResult, SpecialTable as SpecialTableType } from '../../../types/tables'
@@ -67,13 +67,7 @@ export function SpecialTable({ tableId, onComplete }: SpecialTableProps) {
                 const gift: Gift = {
                   id: `gift_${Date.now()}`,
                   name: itemData.name || rollResult.entry.result,
-                  description: rollResult.entry.description || '',
-                  type: itemData.type || 'Item',
-                  quality: itemData.quality || 'Standard',
-                  value: itemData.value || 'Unknown',
-                  giver: itemData.giver || 'Unknown',
-                  occasion: itemData.occasion || 'Character generation',
-                  significance: itemData.significance || 'Personal'
+                  type: itemData.type || 'Item'
                 }
                 addGift(gift)
                 break
@@ -82,13 +76,8 @@ export function SpecialTable({ tableId, onComplete }: SpecialTableProps) {
                 const legacy: Legacy = {
                   id: `legacy_${Date.now()}`,
                   name: itemData.name || rollResult.entry.result,
-                  description: rollResult.entry.description || '',
                   type: itemData.type || 'Item',
-                  quality: itemData.quality || 'Standard',
-                  value: itemData.value || 'Unknown',
-                  origin: itemData.origin || 'Family heirloom',
-                  history: itemData.history || 'Passed down through generations',
-                  significance: itemData.significance || 'Ancestral'
+                  inheritance: true
                 }
                 addLegacy(legacy)
                 break
@@ -100,9 +89,7 @@ export function SpecialTable({ tableId, onComplete }: SpecialTableProps) {
                   description: rollResult.entry.description || '',
                   type: itemData.type || 'Unique',
                   rarity: itemData.rarity || 'Uncommon',
-                  properties: itemData.properties || [],
-                  origin: itemData.origin || 'Acquired during generation',
-                  significance: itemData.significance || 'Special'
+                  category: itemData.category || 'Special'
                 }
                 addSpecialItem(specialItem)
                 break
@@ -251,7 +238,7 @@ export function SpecialTable({ tableId, onComplete }: SpecialTableProps) {
         <div className={`bg-${colorClass}-50 border-2 border-${colorClass}-500 rounded-lg p-4 animate-fade-in`}>
           <div className="text-center mb-4">
             <div className={`text-2xl font-bold text-${colorClass}-800 mb-2`}>
-              🎯 Rolled: {result.rollResult?.finalResult}
+              🎯 Rolled: {typeof result.rollResult === 'number' ? result.rollResult : result.rollResult?.finalResult}
             </div>
             <div className={`text-lg font-semibold text-${colorClass}-700`}>
               {result.entry?.result}
@@ -332,7 +319,7 @@ export function SpecialTable({ tableId, onComplete }: SpecialTableProps) {
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-medium text-gray-800 mb-3">Sample Items (Roll {table.diceType}):</h4>
           <div className="grid grid-cols-1 gap-2 text-sm">
-            {table.entries.slice(0, 5).map((entry, index) => (
+            {table.entries.slice(0, 5).map((entry) => (
               <div key={entry.id} className="flex items-start justify-between py-2 border-b border-gray-200 last:border-b-0">
                 <span className="text-gray-600 font-mono text-xs">
                   {Array.isArray(entry.rollRange) ? 

@@ -409,7 +409,7 @@ export const divineArtifactsTable: SpecialTable = {
   name: 'Divine Artifacts',
   category: 'special',
   diceType: 'd100',
-  itemType: 'divine',
+  itemType: 'special',
   valuationRequired: false,
   instructions: 'Roll d100 for divine or legendary artifact',
   entries: [

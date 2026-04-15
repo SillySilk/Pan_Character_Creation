@@ -4,12 +4,10 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './Card'
 import { Button } from './Button'
-import { Separator } from './Separator'
 import { Badge } from './Badge'
-import { 
-  CharacterModifiersView, 
-  ModifierSummaryDisplay, 
-  BalanceIndicator 
+import {
+  CharacterModifiersView,
+  ModifierSummaryDisplay
 } from './ModifierDisplay'
 import { 
   TradeoffPreview, 
@@ -20,7 +18,7 @@ import {
   BalanceWarningSystem, 
   RealTimeBalanceTracker 
 } from './BalanceWarning'
-import type { Character, AppliedModifier, ModifierSummary } from '../../types/character'
+import type { Character } from '../../types/character'
 import type { Effect } from '../../types/tables'
 
 /**

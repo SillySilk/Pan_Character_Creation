@@ -1,7 +1,7 @@
 // Streamlined Personality Selector - Automatic dice rolling with excitement
 // No accept/decline buttons - pure dice-driven character development
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { tableEngine } from '../../../services/tableEngine'
 import { balancedPersonalityTables } from '../../../data/tables/personality-balanced'
@@ -9,7 +9,6 @@ import { BalanceWarningSystem } from '../../ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/Card'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
-import type { Character } from '../../../types/character'
 
 interface StreamlinedPersonalitySelectorProps {
   onStepComplete?: () => void
@@ -117,11 +116,6 @@ export function StreamlinedPersonalitySelector({ onStepComplete }: StreamlinedPe
     }
   }
 
-  const handleFinalContinue = () => {
-    setTimeout(() => {
-      onStepComplete?.()
-    }, 1500)
-  }
 
   if (!character) {
     return (
@@ -171,10 +165,10 @@ export function StreamlinedPersonalitySelector({ onStepComplete }: StreamlinedPe
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
-            <Badge variant={phase === 'values-complete' || phase === 'rolling-traits' || phase === 'traits-complete' || phase === 'complete' ? 'success' : phase.includes('values') ? 'default' : 'secondary'}>
+            <Badge variant={phase === 'values-complete' || phase === 'rolling-traits' || (phase as string) === 'traits-complete' || (phase as string) === 'complete' ? 'success' : phase.includes('values') ? 'default' : 'secondary'}>
               Core Values
             </Badge>
-            <Badge variant={phase === 'traits-complete' || phase === 'complete' ? 'success' : phase.includes('traits') ? 'default' : 'secondary'}>
+            <Badge variant={(phase as string) === 'traits-complete' || (phase as string) === 'complete' ? 'success' : phase.includes('traits') ? 'default' : 'secondary'}>
               Personality Traits
             </Badge>
           </div>

@@ -1,7 +1,7 @@
 // Heritage Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
-import { HeritageTable as HeritageTableType } from '../../../types/tables'
+import { useState, useEffect } from 'react'
+import { HeritageTable as HeritageTableType, Effect } from '../../../types/tables'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
@@ -22,7 +22,7 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
   const [showFullTable, setShowFullTable] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
-  const { currentStep } = useGenerationStore()
+  const { currentStep: _currentStep } = useGenerationStore()
   
   // Use global singleton TableEngine
   const tableEngine = getGlobalTableEngine()
@@ -47,7 +47,7 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
   }, [tableId, tableEngine])
 
   const handleRoll = async () => {
-    if (!table) return
+    if (!table || !character) return
     
     setRolling(true)
     
@@ -96,7 +96,7 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
   }
 
   const handleManualSelect = async (entryId: string) => {
-    if (!table) return
+    if (!table || !character) return
     
     const entry = table.entries.find(e => e.id === entryId)
     if (!entry) return
@@ -228,7 +228,7 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
             <div className="space-y-2">
               <h5 className="font-semibold text-green-800">Effects:</h5>
               <ul className="list-disc list-inside space-y-1">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: Effect, index: number) => (
                   <li key={index} className="text-green-700 text-sm">
                     <span className="font-medium">{effect.type}:</span> {JSON.stringify(effect.value)}
                   </li>
@@ -282,11 +282,11 @@ export function HeritageTable({ tableId, onComplete }: HeritageTableProps) {
       )}
 
       {/* Heritage-Specific Information */}
-      {table.culturalVariations && (
+      {(table as HeritageTableType & { culturalVariations?: Record<string, string> }).culturalVariations && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <h5 className="font-semibold text-amber-800 mb-2">Cultural Variations:</h5>
           <ul className="list-disc list-inside space-y-1">
-            {Object.entries(table.culturalVariations).map(([culture, variation]) => (
+            {Object.entries((table as HeritageTableType & { culturalVariations?: Record<string, string> }).culturalVariations!).map(([culture, variation]) => (
               <li key={culture} className="text-amber-700 text-sm">
                 <span className="font-medium">{culture}:</span> {variation}
               </li>

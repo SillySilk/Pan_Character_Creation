@@ -300,6 +300,7 @@ export interface DD5eConverter {
     bonds: string[]
     flaws: string[]
   }
+  calculateDD5eStats(character: any): any
 }
 
 // 5e Validation

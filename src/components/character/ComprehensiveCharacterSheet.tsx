@@ -1,10 +1,9 @@
 // Comprehensive Character Sheet - Shows all fields that will be generated
 // with progressive filling as generation proceeds
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
-import type { Character } from '../../types/character'
-import { DND_CORE_SKILLS, calculateSkillBonus, getAbilityModifier } from '../../data/dndSkills'
+import { DND_CORE_SKILLS, calculateSkillBonus } from '../../data/dndSkills'
 
 interface ComprehensiveCharacterSheetProps {
   className?: string
@@ -19,16 +18,11 @@ interface CharacterSheetField {
   description?: string
 }
 
-interface CharacterSheetSection {
-  title: string
-  fields: CharacterSheetField[]
-  isScrollable?: boolean
-}
 
-export function ComprehensiveCharacterSheet({ 
-  className = '', 
+export function ComprehensiveCharacterSheet({
+  className = '',
   collapsible = false,
-  currentStep = 'complete'
+  currentStep: _currentStep = 'complete'
 }: ComprehensiveCharacterSheetProps) {
   const { character, updateCharacter } = useCharacterStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -43,50 +37,44 @@ export function ComprehensiveCharacterSheet({
     return 'filled'
   }
 
-  // Helper to get racial modifiers for an ability
-  const getRacialModifiers = (ability: string): number => {
-    if (!character?.race?.modifiers) return 0
-    
-    // Parse racial modifiers from the race's modifiers object
-    const modifiers = character.race.modifiers
-    
-    // Map ability names to modifier property names
-    const abilityMap: Record<string, keyof typeof modifiers> = {
-      'strength': 'str',
-      'dexterity': 'dex', 
-      'constitution': 'con',
-      'intelligence': 'int',
-      'wisdom': 'wis',
-      'charisma': 'cha'
-    }
-    
-    const modifierKey = abilityMap[ability]
-    return (modifiers[modifierKey] as number) || 0
+  // Get racial modifier for an ability from the DnD race (not Central Casting race)
+  const getDndRacialMod = (ability: string): number => {
+    const mods = character?.dndRace?.abilityModifiers
+    if (!mods) return 0
+    return (mods as Record<string, number>)[ability] ?? 0
   }
 
-  // Helper to format ability scores - show raw scores initially, modifiers only after racial/background effects
-  const formatAbilityScore = (baseScore: number | undefined, ability: string) => {
-    const base = baseScore || 0
-    
-    if (base === 0) {
-      return 'Not rolled yet'
+  // Format ability score showing base roll, racial modifier, and total
+  const formatAbilityScore = (finalScore: number | undefined, ability: string) => {
+    const final = finalScore || 0
+    if (final === 0) return 'Not rolled yet'
+
+    const dndRace = character?.dndRace
+    const raceSource = character?.raceSource
+    const base = character?.baseAbilityScores
+      ? (character.baseAbilityScores as Record<string, number>)[ability] ?? final
+      : final
+
+    // Race pending — background will choose
+    if (!dndRace && raceSource === 'background') {
+      const abilityMod = Math.floor((final - 10) / 2)
+      const abilityModText = `${abilityMod >= 0 ? '+' : ''}${abilityMod}`
+      return `${final} (${abilityModText}) + racial pending`
     }
-    
-    const racialMod = getRacialModifiers(ability)
-    const hasRace = character?.race?.name
-    
-    // If no race selected yet, just show the raw score
-    if (!hasRace || racialMod === 0) {
-      return `${base}`
+
+    const racialMod = getDndRacialMod(ability)
+
+    // No racial modifier for this stat
+    if (racialMod === 0) {
+      const abilityMod = Math.floor((final - 10) / 2)
+      return `${final} (${abilityMod >= 0 ? '+' : ''}${abilityMod})`
     }
-    
-    // If race is selected and has modifiers, show the breakdown
-    const total = base + racialMod
-    const modifier = Math.floor((total - 10) / 2)
-    const modifierText = `${modifier >= 0 ? '+' : ''}${modifier}`
-    const racialText = `${racialMod >= 0 ? '+' : ''}${racialMod}`
-    
-    return `${total} (${modifierText}) [${base}${racialText} racial]`
+
+    // Show full breakdown: total (modifier) [base ± racial racial]
+    const abilityMod = Math.floor((final - 10) / 2)
+    const abilityModText = `${abilityMod >= 0 ? '+' : ''}${abilityMod}`
+    const racialText = `${racialMod >= 0 ? '+' : ''}${racialMod} racial`
+    return `${final} (${abilityModText}) [${base} ${racialText}]`
   }
 
   // Helper to get status color
@@ -123,14 +111,14 @@ export function ComprehensiveCharacterSheet({
     updateCharacter({ ...character, ...newStats })
   }
 
-  // Helper to get ability scores for skills calculation (includes racial modifiers)
+  // Helper to get ability scores for skills calculation (final scores already include racial mods)
   const getAbilityScores = () => ({
-    strength: (character?.strength || 0) + getRacialModifiers('strength'),
-    dexterity: (character?.dexterity || 0) + getRacialModifiers('dexterity'),
-    constitution: (character?.constitution || 0) + getRacialModifiers('constitution'),
-    intelligence: (character?.intelligence || 0) + getRacialModifiers('intelligence'),
-    wisdom: (character?.wisdom || 0) + getRacialModifiers('wisdom'),
-    charisma: (character?.charisma || 0) + getRacialModifiers('charisma')
+    strength: character?.strength || 0,
+    dexterity: character?.dexterity || 0,
+    constitution: character?.constitution || 0,
+    intelligence: character?.intelligence || 0,
+    wisdom: character?.wisdom || 0,
+    charisma: character?.charisma || 0
   })
 
   // Helper to get character's skill ranks (from character data)
@@ -505,7 +493,7 @@ export function ComprehensiveCharacterSheet({
                   <div 
                     key={fieldIndex}
                     className={`flex items-center justify-between px-2 py-1 rounded border ${getStatusColor(field.status)} min-h-[28px]`}
-                    title={field.description || ''}
+                    title={(field as CharacterSheetField).description || ''}
                   >
                     <span className="text-sm font-medium flex-shrink-0 mr-2">{field.label}:</span>
                     <span className="text-sm font-mono text-right break-words overflow-hidden">{field.value}</span>

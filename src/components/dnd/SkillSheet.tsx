@@ -1,6 +1,5 @@
 // D&D 3.5 Comprehensive Skill Sheet Component
 
-import React from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { DND_CORE_SKILLS, getAbilityModifier, calculateSkillBonus, type DnDSkill } from '../../data/dndSkills'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card'

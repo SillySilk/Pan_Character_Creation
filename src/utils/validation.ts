@@ -333,7 +333,7 @@ export const TableValidation = {
     }
 
     // Validate goto references
-    if (entry.goto && !this.isValidTableReference(entry.goto)) {
+    if (entry.goto && !this.isValidTableReference(typeof entry.goto === 'string' ? entry.goto : entry.goto.tableId)) {
       warnings.push(`Entry ${index + 1}: Goto reference "${entry.goto}" may be invalid`)
     }
 

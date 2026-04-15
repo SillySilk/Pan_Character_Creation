@@ -1,6 +1,6 @@
 // Occupation Selection Component with Skill Calculations
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { OccupationTable } from './OccupationTable'
@@ -21,6 +21,7 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
 
   // Check existing occupations and determine workflow
   useEffect(() => {
+    if (!character) return
     if (character.occupations) {
       const apprenticeshipOccs = character.occupations.filter(occ => 
         occ.type === 'apprenticeship' || occ.category === 'apprenticeship'
@@ -57,9 +58,10 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
   }, [character])
 
   const handleApprenticeshipComplete = (result: any) => {
+    if (!character) return
     const newApprenticeships = [...apprenticeships, result]
     setApprenticeships(newApprenticeships)
-    
+
     // Update character store
     const updatedOccupations = [...(character.occupations || []), {
       ...result.entry,
@@ -75,11 +77,12 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
   }
 
   const handleCivilizedComplete = (result: any) => {
+    if (!character) return
     console.log('🔍 OccupationSelector: Civilized profession selected:', result)
-    
+
     const newCivilized = [...civilizedOccupations, result]
     setCivilizedOccupations(newCivilized)
-    
+
     // Update character store
     const occupation = {
       ...result.entry,
@@ -98,10 +101,11 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
   }
 
   const handleHobbyComplete = (result: any) => {
+    if (!character) return
     const newHobbies = [...hobbies, result]
     setHobbies(newHobbies)
     setShowHobbyTable(false)
-    
+
     // Update character store
     const updatedOccupations = [...(character.occupations || []), {
       ...result.entry,
@@ -123,9 +127,6 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
     }
   }
 
-  const addAnotherHobby = () => {
-    setShowHobbyTable(true)
-  }
 
   const skipToComplete = () => {
     setCurrentPhase('completed')
@@ -149,7 +150,7 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
     
     allOccupations.forEach(occupation => {
       if (occupation.entry?.effects) {
-        occupation.entry.effects.forEach(effect => {
+        occupation.entry.effects.forEach((effect: { type: string; value?: any }) => {
           if (effect.type === 'skill') {
             const skillName = effect.value?.name
             const skillRank = effect.value?.rank || 1
@@ -167,8 +168,12 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
     return Array.from(skills.entries()).map(([name, rank]) => ({ name, rank }))
   }
 
+  if (!character) {
+    return <div>No character loaded.</div>
+  }
+
   // Check if character had apprenticeship offer
-  const hasApprenticeshipOffer = character.youthEvents?.some(event => 
+  const hasApprenticeshipOffer = character.youthEvents?.some(event =>
     event.result === 'Apprenticeship Offer' || event.name === 'Apprenticeship Offer'
   )
 
@@ -446,15 +451,15 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
                 <div>
                   <span className="text-blue-700 font-medium">Childhood:</span>
                   <span className="ml-1 text-blue-600">
-                    {character?.youthEvents?.find(e => e.eventType === 'childhood')?.result || 
-                     character?.youthEvents?.find(e => e.lifePeriod === 'childhood')?.result || 'Unknown'}
+                    {character?.youthEvents?.find(e => e.eventType === 'childhood')?.result ||
+                     character?.youthEvents?.find(e => e.period === 'Childhood')?.result || 'Unknown'}
                   </span>
                 </div>
                 <div>
                   <span className="text-blue-700 font-medium">Adolescence:</span>
                   <span className="ml-1 text-blue-600">
-                    {character?.youthEvents?.find(e => e.eventType === 'adolescence')?.result || 
-                     character?.youthEvents?.find(e => e.lifePeriod === 'adolescence')?.result || 'Unknown'}
+                    {character?.youthEvents?.find(e => e.eventType === 'adolescence')?.result ||
+                     character?.youthEvents?.find(e => e.period === 'Adolescence')?.result || 'Unknown'}
                   </span>
                 </div>
               </div>
@@ -507,29 +512,33 @@ export function OccupationSelector({ onComplete }: OccupationSelectorProps) {
             )}
             
             {/* Personality Traits */}
-            {character && character.personalityTraits && character.personalityTraits.length > 0 && (
-              <div className="mb-4">
-                <h5 className="font-medium text-gray-700 mb-2">Personality Traits</h5>
-                <div className="flex flex-wrap gap-2">
-                  {character.personalityTraits.slice(0, 8).map((trait, index) => (
-                    <div key={index} className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">
-                      <span>
-                        {trait.type === 'Lightside' ? '😇' : 
-                         trait.type === 'Darkside' ? '😈' : 
-                         trait.type === 'Neutral' ? '😐' : 
-                         trait.type === 'Exotic' ? '✨' : '❓'}
-                      </span>
-                      <span className="font-medium">{trait.name}</span>
-                    </div>
-                  ))}
-                  {character.personalityTraits.length > 8 && (
-                    <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
-                      +{character.personalityTraits.length - 8} more
-                    </div>
-                  )}
+            {character && character.personalityTraits && (() => {
+              const pt = character.personalityTraits as unknown as { lightside?: {type?:string;name?:string}[], neutral?: {type?:string;name?:string}[], darkside?: {type?:string;name?:string}[], exotic?: {type?:string;name?:string}[] }
+              const allTraits = [...(pt.lightside||[]), ...(pt.neutral||[]), ...(pt.darkside||[]), ...(pt.exotic||[])]
+              return allTraits.length > 0 ? (
+                <div className="mb-4">
+                  <h5 className="font-medium text-gray-700 mb-2">Personality Traits</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {allTraits.slice(0, 8).map((trait, index) => (
+                      <div key={index} className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">
+                        <span>
+                          {trait.type === 'Lightside' ? '😇' :
+                           trait.type === 'Darkside' ? '😈' :
+                           trait.type === 'Neutral' ? '😐' :
+                           trait.type === 'Exotic' ? '✨' : '❓'}
+                        </span>
+                        <span className="font-medium">{trait.name}</span>
+                      </div>
+                    ))}
+                    {allTraits.length > 8 && (
+                      <div className="px-2 py-1 bg-gray-200 rounded text-sm text-gray-600">
+                        +{allTraits.length - 8} more
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null
+            })()}
             
             <div className="mt-3 text-sm text-gray-700 font-medium border-t pt-3">
               Heritage + Youth + Occupations Complete: {character?.name || 'Your character'} is ready for adult life events

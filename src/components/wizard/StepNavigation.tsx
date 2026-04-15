@@ -42,7 +42,7 @@ export function StepNavigation({
       {/* Desktop Navigation */}
       <div className="hidden md:block overflow-x-auto">
         <div className="flex space-x-1 p-2 min-w-max">
-          {steps.map((step, index) => {
+          {steps.map((step) => {
             const status = getStepStatus(step.id)
             const canNavigate = canNavigateToStep(step.id)
             
@@ -87,7 +87,7 @@ export function StepNavigation({
           
           {/* Mobile Step Indicator */}
           <div className="flex items-center gap-1">
-            {steps.map((step, index) => (
+            {steps.map((step) => (
               <div
                 key={step.id}
                 className={`w-2 h-2 rounded-full ${

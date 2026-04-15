@@ -1,4 +1,26 @@
 // Character and related entity type definitions for PanCasting
+import type { DnDRace } from '@/data/dndRaces'
+
+// Equipment references stored on Character — written by EquipmentPanel
+export interface EquippedWeaponRef {
+  weaponId: string
+  slot: 'primary' | 'secondary' | 'ranged'
+  enhancementBonus: number
+  isMasterwork: boolean
+  hasFocus: boolean
+  hasSpecialization: boolean
+  notes: string
+}
+
+export interface EquippedArmorRef {
+  armorId: string
+  shieldId: string
+  enhancementBonus: number
+  shieldEnhancement: number
+  naturalArmorBonus: number
+  deflectionBonus: number
+  miscACBonus: number
+}
 
 export interface Character {
   // Core Identity
@@ -10,14 +32,30 @@ export interface Character {
   generationStep?: number
   lastModified?: Date
   
-  // D&D 3.5 Ability Scores (rolled at character creation)
+  // D&D 3.5 Race Selection
+  // 'manual' = chosen on the character sheet before background generation
+  // 'background' = deferred to the Heritage & Birth table roll (default)
+  raceSource?: 'manual' | 'background'
+  dndRace?: DnDRace
+
+  // D&D 3.5 Ability Scores — final values (base + racial modifiers)
   strength?: number
   dexterity?: number
   constitution?: number
   intelligence?: number
   wisdom?: number
   charisma?: number
-  
+
+  // Base ability scores before racial modifiers are applied
+  baseAbilityScores?: {
+    strength: number
+    dexterity: number
+    constitution: number
+    intelligence: number
+    wisdom: number
+    charisma: number
+  }
+
   // D&D Class Selection
   characterClass?: {
     name: string
@@ -27,7 +65,47 @@ export interface Character {
     primaryAbility: string
     startingSkillRanks?: Record<string, number>
   }
-  
+
+  // D&D Alignment (9-point grid)
+  dndAlignment?: DnDAlignmentCode
+
+  // Hit Points
+  hpMax?: number
+  hpCurrent?: number
+  /** HP rolled or chosen per level (index 0 = level 1) */
+  hpPerLevel?: number[]
+
+  // Computed combat statistics — recalculated whenever class/level/race/ability scores change
+  combatStats?: DnDCombatStats
+
+  // Selected feats (feat IDs from dndFeats.ts)
+  selectedFeats?: string[]       // general + human bonus slots
+  fighterBonusFeats?: string[]   // fighter bonus feat slots (Fighter class only)
+
+  // Languages beyond the race's automatic set (chosen from bonusLanguages pool)
+  bonusLanguages?: string[]
+
+  // Equipment — written by EquipmentPanel
+  equippedWeapons?: EquippedWeaponRef[]
+  equippedArmor?: EquippedArmorRef
+  gearInventory?: Record<string, number>
+  currency?: { pp?: number; gp?: number; sp?: number; cp?: number }
+  /** Original rolled starting gold (in gp), retained so the spent/budget meter survives spending */
+  rolledStartingGp?: number
+
+  // Spellcaster notes — free text per spell level
+  spellNotes?: Record<number, string>
+
+  // Physical description — appearance fields shown on the Details tab
+  appearance?: {
+    height?: string
+    weight?: string
+    hair?: string
+    eyes?: string
+    skin?: string
+    description?: string
+  }
+
   // Finalization Status
   isFinalized?: boolean
   completedAt?: Date
@@ -43,12 +121,13 @@ export interface Character {
   youthEvents: Event[]          // 200s
   adulthoodEvents: Event[]      // 400s
   miscellaneousEvents: Event[]  // 600s
+  lifeEvents?: Event[]          // Combined life events (optional)
   
   // Skills & Occupations (300s)
   occupations: Occupation[]
   apprenticeships: Apprenticeship[]
   hobbies: Hobby[]
-  skills?: Skill[]
+  skills: Skill[]
   
   // Personality (500s)
   values: Values
@@ -74,6 +153,9 @@ export interface Character {
   // Balanced Modifier System
   appliedModifiers?: AppliedModifier[]
   modifierSummary?: ModifierSummary
+
+  // Extended social data (referenced in some components)
+  social?: Record<string, unknown>
 }
 
 // Heritage & Birth Types (100s)
@@ -146,7 +228,8 @@ export interface FamilyMember {
 // Occupation & Skills Types (300s)
 export interface Occupation {
   name: string
-  type: 'Craft' | 'Professional' | 'Military' | 'Religious' | 'Criminal' | 'Special' | 'Academic'
+  type: 'Craft' | 'Professional' | 'Military' | 'Religious' | 'Criminal' | 'Special' | 'Academic' | 'apprenticeship' | 'civilized' | 'hobby'
+  category?: string
   culture: string[]
   rank: number
   duration: number
@@ -220,6 +303,7 @@ export interface Values {
   mostValuedPerson: string
   mostValuedThing: string
   mostValuedAbstraction: string
+  mostValuedConcept?: string
   strength: TraitStrength
   motivations: string[]
 }
@@ -230,6 +314,29 @@ export interface Alignment {
   description: string
   dndAlignment?: string
   behaviorGuidelines: string[]
+}
+
+// D&D 3.5 nine-point alignment grid
+export type DnDAlignmentCode = 'LG' | 'NG' | 'CG' | 'LN' | 'TN' | 'CN' | 'LE' | 'NE' | 'CE'
+
+export interface DnDCombatStats {
+  /** Primary and iterative attack bonuses, e.g. [8, 3] */
+  bab: number[]
+  fortitude: number
+  reflex: number
+  will: number
+  /** Full AC: 10 + DEX (capped) + armor + shield + natural + deflection + misc */
+  ac: number
+  /** Touch AC: 10 + DEX + deflection + misc (no armor/shield/natural) */
+  touchAC: number
+  /** Flat-footed AC: AC minus DEX bonus */
+  flatFootedAC: number
+  /** DEX mod + Improved Initiative bonus */
+  initiative: number
+  /** BAB + STR mod + size modifier (Medium = 0) */
+  grapple: number
+  /** ft/round; reduced by armor type */
+  speed: number
 }
 
 // System Types
@@ -278,7 +385,7 @@ export type RelationshipType = 'Family' | 'Friend' | 'Rival' | 'Romantic' | 'Pro
 export type RelationshipStrength = 'Weak' | 'Average' | 'Strong' | 'Intense' | 'Devoted'
 export type LifePeriod = 'Childhood' | 'Adolescence' | 'Adulthood'
 export type EventCategory = 'Youth' | 'Adulthood' | 'Miscellaneous' | 'Special'
-export type NPCType = 'Companion' | 'Rival' | 'Family' | 'Contact' | 'Patron' | 'Other'
+export type NPCType = 'Companion' | 'Rival' | 'Family' | 'Contact' | 'Patron' | 'Other' | 'companion' | 'rival' | 'family' | 'professional' | 'npc'
 export type PersonalityTraitType = 'Lightside' | 'Neutral' | 'Darkside' | 'Random'
 
 // Forward declarations for types defined in other files
@@ -289,28 +396,51 @@ export interface Event {
   category: EventCategory
   period: LifePeriod
   age?: number
+  // Additional properties referenced in components
+  result?: string
+  eventType?: string
+  ageRange?: { min?: number; max?: number }
 }
 
 export interface NPC {
   id: string
   name: string
   type: NPCType
+  description?: string
+  role?: string
+  location?: string
+  disposition?: string
+  importance?: string
+  secrets?: string[]
+  [key: string]: unknown
 }
 
 export interface Companion extends NPC {
-  loyalty: 'Weak' | 'Average' | 'Strong' | 'Devoted'
+  loyalty?: 'Weak' | 'Average' | 'Strong' | 'Devoted'
+  relationship?: string
+  met?: string
+  currentStatus?: string
+  skills?: string[]
 }
 
 export interface Rival extends NPC {
-  conflictType: string
+  conflictType?: string
+  threat?: string
+  reason?: string
+  currentStatus?: string
 }
 
 export interface Relationship {
   id: string
-  person: NPC
-  type: RelationshipType
-  // Additional property referenced in components
+  person?: NPC
+  type: RelationshipType | string
+  // Additional properties referenced in components
   name?: string
+  description?: string
+  strength?: string
+  status?: string
+  history?: string
+  [key: string]: unknown
 }
 
 export interface Gift {
@@ -324,7 +454,10 @@ export interface Legacy extends Gift {
 }
 
 export interface SpecialItem extends Gift {
-  rarity: string
+  rarity?: string
+  description?: string
+  category?: string
+  result?: string
 }
 
 // Re-export DDStats from dnd.ts for full D&D integration
@@ -346,7 +479,7 @@ export interface BalancedModifier {
   target: string
   value: number | string
   description: string
-  category: 'physical' | 'intellectual' | 'social' | 'psychological'
+  category: 'physical' | 'intellectual' | 'social' | 'psychological' | 'practical'
 }
 
 export interface ModifierSummary {

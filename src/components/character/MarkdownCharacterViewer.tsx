@@ -1,7 +1,7 @@
 // Markdown Character Viewer - Real-time markdown display of character
 // Updates automatically as character is generated piece by piece
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 
 interface MarkdownCharacterViewerProps {

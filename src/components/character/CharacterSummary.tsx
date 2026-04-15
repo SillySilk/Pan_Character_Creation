@@ -1,6 +1,6 @@
 // Enhanced Character Summary Component for PanCasting Generation Workflow
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Character } from '../../types/character'
 import { useCharacterStore } from '../../stores/characterStore'
 
@@ -483,7 +483,7 @@ export function CharacterSummary({
                   <span className="text-xs text-gray-500">{event.tableName}</span>
                 </div>
                 {event.rollDetails && (
-                  <div className="text-xs text-gray-600 mt-1">{event.rollDetails}</div>
+                  <div className="text-xs text-gray-600 mt-1">{event.rollDetails.finalRoll} ({event.rollDetails.breakdown})</div>
                 )}
               </div>
             ))}

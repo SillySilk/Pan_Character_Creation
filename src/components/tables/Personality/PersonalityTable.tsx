@@ -1,9 +1,10 @@
 // Personality Table Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
 import type { TableProcessingResult, PersonalityTable as PersonalityTableType } from '../../../types/tables'
+import type { PersonalityTrait } from '../../../types/character'
 
 interface PersonalityTableProps {
   tableId: string
@@ -51,7 +52,7 @@ export function PersonalityTable({ tableId, onComplete }: PersonalityTableProps)
     setError(null)
 
     try {
-      const rollResult = await tableEngine.processTable(table.id, character, undefined, rollValue)
+      const rollResult = tableEngine.processTable(table.id, character, { manualSelection: rollValue })
       setResult(rollResult)
 
       // Apply the result to character
@@ -79,10 +80,11 @@ export function PersonalityTable({ tableId, onComplete }: PersonalityTableProps)
               type: effect.value?.type || 'Neutral' as 'Lightside' | 'Neutral' | 'Darkside'
             }
 
+            const traitKey = (effect.value?.category || 'neutral') as keyof typeof character.personalityTraits
             updatePersonalityTraits({
               ...character.personalityTraits,
-              [effect.value?.category || 'neutral']: [
-                ...(character.personalityTraits?.[effect.value?.category || 'neutral'] || []),
+              [traitKey]: [
+                ...((character.personalityTraits?.[traitKey] as PersonalityTrait[]) || []),
                 newTrait
               ]
             })
@@ -206,7 +208,7 @@ export function PersonalityTable({ tableId, onComplete }: PersonalityTableProps)
         <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4 animate-fade-in">
           <div className="text-center mb-4">
             <div className="text-2xl font-bold text-green-800 mb-2">
-              🎯 Rolled: {result.rollResult?.finalResult}
+              🎯 Rolled: {typeof result.rollResult === 'number' ? result.rollResult : result.rollResult?.finalResult}
             </div>
             <div className="text-lg font-semibold text-green-700">
               {result.entry?.result}
@@ -259,7 +261,7 @@ export function PersonalityTable({ tableId, onComplete }: PersonalityTableProps)
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-medium text-gray-800 mb-3">Sample Results (Roll {table.diceType}):</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-            {table.entries.slice(0, 6).map((entry, index) => (
+            {table.entries.slice(0, 6).map((entry) => (
               <div key={entry.id} className="flex items-center justify-between py-1">
                 <span className="text-gray-600">
                   {Array.isArray(entry.rollRange) ? 

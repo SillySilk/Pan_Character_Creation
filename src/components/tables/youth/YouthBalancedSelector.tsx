@@ -6,12 +6,10 @@ import { useCharacterStore } from '../../../stores/characterStore'
 import { tableEngine } from '../../../services/tableEngine'
 import { balancedChildhoodEventsTable } from '../../../data/tables/youth-balanced'
 import balancedAdolescenceEventsTable from '../../../data/tables/adolescence-balanced'
-import { TradeoffPreview, BalanceWarningSystem } from '../../ui'
+import { BalanceWarningSystem } from '../../ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/Card'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
-import type { Character } from '../../../types/character'
-import type { Effect } from '../../../types/tables'
 
 interface YouthBalancedSelectorProps {
   onStepComplete?: () => void
@@ -20,7 +18,6 @@ interface YouthBalancedSelectorProps {
 export function YouthBalancedSelector({ onStepComplete }: YouthBalancedSelectorProps) {
   const { character, updateCharacter } = useCharacterStore()
   const [currentPhase, setCurrentPhase] = useState<'childhood' | 'adolescence' | 'complete'>('childhood')
-  const [selectedEvent, setSelectedEvent] = useState<Effect | null>(null)
 
   // Initialize balanced tables if not already registered
   React.useEffect(() => {

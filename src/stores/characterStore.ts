@@ -35,7 +35,6 @@ import { DEFAULTS } from '@/utils/constants'
 import { modifierCalculator } from '@/services/modifierCalculator'
 import { markdownCharacterService } from '../services/markdownCharacterService'
 import { abilityScoreGenerator } from '@/services/abilityScoreGenerator'
-import { dndIntegrationService } from '@/services/dndIntegrationService'
 
 /**
  * Character store interface
@@ -63,7 +62,27 @@ interface CharacterStore {
   // Ability Score Management
   rollAbilityScores: () => void
   updateAbilityScore: (ability: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma', value: number) => void
-  
+
+  // D&D Race Selection
+  // Pass null to clear race and revert to base scores. Pass a DnDRace to apply its modifiers.
+  setDndRace: (race: import('@/data/dndRaces').DnDRace | null) => void
+
+  // Feat selection
+  setSelectedFeats: (feats: string[]) => void
+  setFighterBonusFeats: (feats: string[]) => void
+
+  // Skill rank assignment — keyed by D&D skill name
+  updateSkillRanks: (ranks: Record<string, number>) => void
+
+  // D&D Alignment
+  setDndAlignment: (alignment: import('@/types/character').DnDAlignmentCode) => void
+
+  // Character Level & HP
+  setCharacterLevel: (level: number) => void
+  setHPCurrent: (hp: number) => void
+  /** Recompute hpMax and combatStats from current class/level/ability scores */
+  recalcCombatStats: () => void
+
   // Markdown management
   getCharacterMarkdown: () => string
   downloadCharacterMarkdown: () => void
@@ -185,7 +204,12 @@ function createEmptyCharacter(name: string = DEFAULTS.characterName): Character 
     id,
     name,
     age: DEFAULTS.characterAge,
-    
+
+    // D&D Race Selection — defaults to 'background' (rolled during Heritage step)
+    raceSource: 'background',
+    dndRace: undefined,
+    baseAbilityScores: undefined,
+
     // Heritage & Birth (100s) - Initialize with empty values
     race: {
       name: '',  // Empty so heritage tables will show
@@ -203,7 +227,7 @@ function createEmptyCharacter(name: string = DEFAULTS.characterName): Character 
       literacyRate: 50
     },
     socialStatus: {
-      level: '',  // Empty until determined during Heritage step
+      level: '' as SocialStatus['level'],  // Empty until determined during Heritage step
       solMod: 0,
       survivalMod: 0,
       moneyMultiplier: 1,
@@ -211,7 +235,7 @@ function createEmptyCharacter(name: string = DEFAULTS.characterName): Character 
       benefits: []
     },
     birthCircumstances: {
-      legitimacy: '',  // Empty until determined during Heritage step
+      legitimacy: '' as BirthCircumstances['legitimacy'],  // Empty until determined during Heritage step
       familyHead: '',
       siblings: 0,
       birthOrder: 0,
@@ -386,40 +410,279 @@ export const useCharacterStore = create<CharacterStore>()(
     rollAbilityScores: () => {
       const { character } = get()
       if (!character) return
-      
-      // Roll 3d6 for each ability score (D&D 3.5 standard)
-      const roll3d6 = () => Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1
-      
-      const abilityScores = {
-        strength: roll3d6(),
-        dexterity: roll3d6(),
-        constitution: roll3d6(),
-        intelligence: roll3d6(),
-        wisdom: roll3d6(),
-        charisma: roll3d6()
+
+      // 4d6 drop lowest — standard D&D 3.5 point buy alternative
+      const roll4d6DropLowest = () => {
+        const rolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1)
+        rolls.sort((a, b) => a - b)
+        return rolls.slice(1).reduce((sum, n) => sum + n, 0)
       }
-      
-      set({ 
-        character: { 
-          ...character, 
-          ...abilityScores,
+
+      const base = {
+        strength: roll4d6DropLowest(),
+        dexterity: roll4d6DropLowest(),
+        constitution: roll4d6DropLowest(),
+        intelligence: roll4d6DropLowest(),
+        wisdom: roll4d6DropLowest(),
+        charisma: roll4d6DropLowest()
+      }
+
+      // Apply racial modifiers on top of base scores
+      const raceMods = character.dndRace?.abilityModifiers ?? {}
+      const finalScores = {
+        strength: base.strength + (raceMods.strength ?? 0),
+        dexterity: base.dexterity + (raceMods.dexterity ?? 0),
+        constitution: base.constitution + (raceMods.constitution ?? 0),
+        intelligence: base.intelligence + (raceMods.intelligence ?? 0),
+        wisdom: base.wisdom + (raceMods.wisdom ?? 0),
+        charisma: base.charisma + (raceMods.charisma ?? 0)
+      }
+
+      set({
+        character: {
+          ...character,
+          baseAbilityScores: base,
+          ...finalScores,
           lastModified: new Date()
         },
-        hasUnsavedChanges: true 
+        hasUnsavedChanges: true
       })
     },
 
     updateAbilityScore: (ability, value) => {
       const { character } = get()
       if (!character) return
-      
-      set({ 
-        character: { 
-          ...character, 
+
+      set({
+        character: {
+          ...character,
           [ability]: value,
           lastModified: new Date()
         },
-        hasUnsavedChanges: true 
+        hasUnsavedChanges: true
+      })
+    },
+
+    // D&D Race Selection — applies or removes racial ability score modifiers
+    setDndRace: (race) => {
+      const { character } = get()
+      if (!character) return
+
+      if (race === null) {
+        // Revert to base scores and clear race
+        const base = character.baseAbilityScores
+        set({
+          character: {
+            ...character,
+            dndRace: undefined,
+            raceSource: 'background',
+            ...(base ? {
+              strength: base.strength,
+              dexterity: base.dexterity,
+              constitution: base.constitution,
+              intelligence: base.intelligence,
+              wisdom: base.wisdom,
+              charisma: base.charisma
+            } : {}),
+            lastModified: new Date()
+          },
+          hasUnsavedChanges: true
+        })
+        return
+      }
+
+      // Compute base scores: if scores are already rolled, strip any previous racial mods first
+      const prevMods = character.dndRace?.abilityModifiers ?? {}
+      const base = character.baseAbilityScores ?? {
+        strength: (character.strength ?? 10) - (prevMods.strength ?? 0),
+        dexterity: (character.dexterity ?? 10) - (prevMods.dexterity ?? 0),
+        constitution: (character.constitution ?? 10) - (prevMods.constitution ?? 0),
+        intelligence: (character.intelligence ?? 10) - (prevMods.intelligence ?? 0),
+        wisdom: (character.wisdom ?? 10) - (prevMods.wisdom ?? 0),
+        charisma: (character.charisma ?? 10) - (prevMods.charisma ?? 0)
+      }
+
+      const newMods = race.abilityModifiers
+
+      // Build racial skill bonus map for dndIntegration
+      const racialSkillBonuses: Record<string, number> = {}
+      for (const sb of race.skillBonuses ?? []) {
+        racialSkillBonuses[sb.skill] = (racialSkillBonuses[sb.skill] ?? 0) + sb.bonus
+      }
+
+      set({
+        character: {
+          ...character,
+          dndRace: race,
+          raceSource: 'manual',
+          baseAbilityScores: base,
+          strength: base.strength + (newMods.strength ?? 0),
+          dexterity: base.dexterity + (newMods.dexterity ?? 0),
+          constitution: base.constitution + (newMods.constitution ?? 0),
+          intelligence: base.intelligence + (newMods.intelligence ?? 0),
+          wisdom: base.wisdom + (newMods.wisdom ?? 0),
+          charisma: base.charisma + (newMods.charisma ?? 0),
+          dndIntegration: {
+            ...character.dndIntegration,
+            skillBonuses: {
+              ...character.dndIntegration?.skillBonuses,
+              ...Object.fromEntries(
+                Object.entries(racialSkillBonuses).map(([skill, bonus]) => {
+                  const existing = character.dndIntegration?.skillBonuses?.[skill]
+                  return [skill, {
+                    totalBonus: (existing?.totalBonus ?? 0) + bonus,
+                    ranks: existing?.ranks ?? 0,
+                    synergy: existing?.synergy ?? 0,
+                    circumstance: existing?.circumstance ?? 0,
+                    racial: bonus,
+                    background: existing?.background ?? 0,
+                    sources: [...(existing?.sources ?? []), `${race.name} racial`]
+                  }]
+                })
+              )
+            }
+          },
+          lastModified: new Date()
+        },
+        hasUnsavedChanges: true
+      })
+    },
+
+    // Feat selection
+    setSelectedFeats: (feats) => {
+      const { character } = get()
+      if (!character) return
+      set({
+        character: { ...character, selectedFeats: feats, lastModified: new Date() },
+        hasUnsavedChanges: true,
+      })
+    },
+
+    setFighterBonusFeats: (feats) => {
+      const { character } = get()
+      if (!character) return
+      set({
+        character: { ...character, fighterBonusFeats: feats, lastModified: new Date() },
+        hasUnsavedChanges: true,
+      })
+    },
+
+    // Skill rank assignment
+    updateSkillRanks: (ranks) => {
+      const { character } = get()
+      if (!character) return
+
+      const {
+        buildSkillBonuses,
+      } = require('@/services/skillService') as typeof import('@/services/skillService')
+
+      const abilities = {
+        strength:     character.strength     ?? 10,
+        dexterity:    character.dexterity    ?? 10,
+        constitution: character.constitution ?? 10,
+        intelligence: character.intelligence ?? 10,
+        wisdom:       character.wisdom       ?? 10,
+        charisma:     character.charisma     ?? 10,
+      }
+
+      const newBonuses = buildSkillBonuses(
+        ranks,
+        abilities,
+        character.dndIntegration?.skillBonuses ?? {},
+      )
+
+      set({
+        character: {
+          ...character,
+          dndIntegration: {
+            ...character.dndIntegration,
+            skillBonuses: newBonuses,
+          },
+          lastModified: new Date(),
+        },
+        hasUnsavedChanges: true,
+      })
+    },
+
+    // D&D Alignment
+    setDndAlignment: (alignment) => {
+      const { character } = get()
+      if (!character) return
+      set({
+        character: { ...character, dndAlignment: alignment, lastModified: new Date() },
+        hasUnsavedChanges: true,
+      })
+    },
+
+    // Character Level & HP
+    setCharacterLevel: (level) => {
+      const { character } = get()
+      if (!character) return
+      const { recalcCombatStats } = get()
+      set({
+        character: { ...character, level, lastModified: new Date() },
+        hasUnsavedChanges: true,
+      })
+      // Recompute HP and combat stats with new level
+      recalcCombatStats()
+    },
+
+    setHPCurrent: (hp) => {
+      const { character } = get()
+      if (!character) return
+      set({
+        character: { ...character, hpCurrent: hp, lastModified: new Date() },
+        hasUnsavedChanges: true,
+      })
+    },
+
+    recalcCombatStats: () => {
+      const { character } = get()
+      if (!character) return
+
+      const { characterClass, level = 1 } = character
+      if (!characterClass) return
+
+      // Lazy-import to avoid circular dependency at module load time
+      const {
+        calcCombatStats,
+        calcHPTotal,
+        abilMod,
+      } = require('@/services/combatStatsService') as typeof import('@/services/combatStatsService')
+
+      const { DND_CORE_CLASSES } = require('@/data/dndClasses') as typeof import('@/data/dndClasses')
+      const cls = DND_CORE_CLASSES.find(c => c.name === characterClass.name)
+      if (!cls) return
+
+      const str  = character.strength     ?? 10
+      const dex  = character.dexterity    ?? 10
+      const con  = character.constitution ?? 10
+      const int_ = character.intelligence ?? 10
+      const wis  = character.wisdom       ?? 10
+      const cha  = character.charisma     ?? 10
+
+      const conMod = abilMod(con)
+      const newHPMax = calcHPTotal(characterClass.hitDie, level, conMod)
+
+      const combatStats = calcCombatStats({
+        babProgression:  cls.baseAttackBonus,
+        fortProgression: cls.fortitudeSave,
+        refProgression:  cls.reflexSave,
+        willProgression: cls.willSave,
+        level,
+        str, dex, con, int: int_, wis, cha,
+        baseSpeed: character.dndRace?.speed ?? 30,
+      })
+
+      set({
+        character: {
+          ...character,
+          hpMax: newHPMax,
+          hpCurrent: newHPMax,
+          combatStats,
+          lastModified: new Date(),
+        },
+        hasUnsavedChanges: true,
       })
     },
 

@@ -9,7 +9,6 @@ import { BalanceWarningSystem } from '../../ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/Card'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
-import type { Character } from '../../../types/character'
 
 interface OccupationBalancedSelectorProps {
   onStepComplete?: () => void

@@ -114,8 +114,8 @@ ${formatAbility('Charisma', character.charisma, getRacialMod('Charisma'))}`
 **Birth Circumstances:** ${birthCircumstances}`
 
     // Add racial abilities if available
-    if (character.race?.abilities?.length) {
-      section += `\n\n**Racial Abilities:**  \n${character.race.abilities.map(ability => `- ${ability}`).join('\n')}`
+    if (character.race?.specialAbilities?.length) {
+      section += `\n\n**Racial Abilities:**  \n${character.race.specialAbilities.map((ability: string) => `- ${ability}`).join('\n')}`
     }
 
     return section
@@ -160,7 +160,7 @@ ${formatAbility('Charisma', character.charisma, getRacialMod('Charisma'))}`
     let section = `## ⚔️ Professional Training`
 
     if (character.apprenticeships?.length) {
-      section += `\n\n**Apprenticeships:**  \n${character.apprenticeships.map(app => `- ${app.name}: ${app.description}`).join('\n')}`
+      section += `\n\n**Apprenticeships:**  \n${character.apprenticeships.map(app => `- ${app.occupation.name} (${app.completed ? 'Completed' : 'In Progress'})`).join('\n')}`
     }
 
     if (character.occupations?.length) {
@@ -304,11 +304,11 @@ ${skillEntries.join('\n')}`
     let section = `## 💎 Special Items`
 
     if (character.gifts?.length) {
-      section += `\n\n**Gifts:**  \n${character.gifts.map(gift => `- ${gift.name}: ${gift.description}`).join('\n')}`
+      section += `\n\n**Gifts:**  \n${character.gifts.map(gift => `- ${gift.name} (${gift.type})`).join('\n')}`
     }
 
     if (character.legacies?.length) {
-      section += `\n\n**Legacies:**  \n${character.legacies.map(legacy => `- ${legacy.name}: ${legacy.description}`).join('\n')}`
+      section += `\n\n**Legacies:**  \n${character.legacies.map(legacy => `- ${legacy.name} (${legacy.type}, inherited: ${legacy.inheritance})`).join('\n')}`
     }
 
     if (character.specialItems?.length) {

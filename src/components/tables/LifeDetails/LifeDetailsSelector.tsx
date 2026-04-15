@@ -1,6 +1,6 @@
 // Life Details Selection Component - Consolidated Relationships, Items & Events
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { LifeDetailsTable } from './LifeDetailsTable'
@@ -13,21 +13,16 @@ export function LifeDetailsSelector({ onComplete }: LifeDetailsSelectorProps) {
   const [selectedRelationship, setSelectedRelationship] = useState<any>(null)
   const [selectedSpecialItem, setSelectedSpecialItem] = useState<any>(null)  
   const [selectedLifeEvent, setSelectedLifeEvent] = useState<any>(null)
-  const [showContinueButton, setShowContinueButton] = useState(false)
+  const [_showContinueButton, setShowContinueButton] = useState(false)
   
   const { character, updateCharacter } = useCharacterStore()
   const { nextStep } = useGenerationStore()
 
-  // Three-tier system: Relationships → Special Items → Life Events
-  const tables = [
-    { id: '901', name: 'Important Relationships', category: 'relationships', icon: '🤝', description: 'Key people in your character\'s life' },
-    { id: '902', name: 'Special Possessions', category: 'items', icon: '💎', description: 'Meaningful items and treasures' },
-    { id: '903', name: 'Defining Life Events', category: 'events', icon: '⚡', description: 'Significant moments that shaped your character' }
-  ]
 
   // Check if character already has life details (state restoration)
   useEffect(() => {
-    console.log('🟡 LifeDetailsSelector: Character check:', { 
+    if (!character) return
+    console.log('🟡 LifeDetailsSelector: Character check:', {
       relationships: character.relationships,
       specialItems: character.specialItems,
       lifeEvents: character.lifeEvents

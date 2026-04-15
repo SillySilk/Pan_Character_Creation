@@ -1,10 +1,10 @@
 // Life Details Table Component - Handles Relationships, Items, and Events
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { getGlobalTableEngine } from '../../../services/globalTableEngine'
-import type { DiceRoll, Table } from '../../../types/tables'
+import type { DiceRoll, Table, Effect } from '../../../types/tables'
 import { rollWithModifiers } from '../../../utils/dice'
 
 interface LifeDetailsTableProps {
@@ -20,8 +20,7 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
   
   const { character, updateCharacter } = useCharacterStore()
-  const { getCurrentStep, createSnapshot } = useGenerationStore()
-  const currentStep = getCurrentStep()
+  const { createSnapshot } = useGenerationStore()
   
   const tableEngine = getGlobalTableEngine()
 
@@ -50,8 +49,8 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
   }, [tableId, tableEngine])
 
   const handleRoll = async () => {
-    if (!table) return
-    
+    if (!table || !character) return
+
     setRolling(true)
     
     try {
@@ -62,7 +61,7 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
       setCurrentRoll(combinedRoll)
       
       // Process the table result with the calculated roll
-      const result = await tableEngine.processTable(table.id, character, undefined, totalRoll)
+      const result = tableEngine.processTable(table.id, character, { manualSelection: totalRoll })
       
       if (result.success && result.entry) {
         setSelectedEntry(result.entry)
@@ -94,22 +93,23 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
             updatedCharacter.lifeEvents = [...(character.lifeEvents || []), {
               id: `event_${Date.now()}`,
               name: result.entry.result,
-              description: result.entry.description,
-              type: 'defining',
-              category: 'life_event'
+              description: result.entry.description || '',
+              eventType: 'defining',
+              category: 'Miscellaneous' as const,
+              period: 'Adulthood' as const
             }]
           }
         }
-        
+
         updateCharacter(updatedCharacter)
-        
+
         // Add to generation history
-        const tableTypeNames = {
+        const tableTypeNames: Record<string, string> = {
           '901': 'Important Relationship',
-          '902': 'Special Possession', 
+          '902': 'Special Possession',
           '903': 'Defining Life Event'
         }
-        
+
         createSnapshot(
           `Rolled on ${tableTypeNames[tableId] || table.name}: ${result.entry.result}`,
           updatedCharacter
@@ -133,7 +133,7 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
   }
 
   const handleManualSelect = async (entryId: string) => {
-    if (!table) return
+    if (!table || !character) return
     
     const entry = table.entries.find(e => e.id === entryId)
     if (!entry) return
@@ -183,22 +183,23 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
           updatedCharacter.lifeEvents = [...(character.lifeEvents || []), {
             id: `event_${Date.now()}`,
             name: entry.result,
-            description: entry.description,
-            type: 'defining',
-            category: 'life_event'
+            description: entry.description || '',
+            eventType: 'defining',
+            category: 'Miscellaneous' as const,
+            period: 'Adulthood' as const
           }]
         }
       }
-      
+
       updateCharacter(updatedCharacter)
-      
+
       // Add to history
-      const tableTypeNames = {
+      const tableTypeNames: Record<string, string> = {
         '901': 'Important Relationship',
         '902': 'Special Possession',
         '903': 'Defining Life Event'
       }
-      
+
       createSnapshot(
         `Selected from ${tableTypeNames[tableId] || table.name}: ${entry.result}`,
         updatedCharacter
@@ -334,7 +335,7 @@ export function LifeDetailsTable({ tableId, onComplete }: LifeDetailsTableProps)
             <div className="space-y-3">
               <h5 className={`font-semibold text-${tableColor}-800`}>Effects:</h5>
               <div className="grid gap-3">
-                {selectedEntry.effects.map((effect, index) => (
+                {selectedEntry.effects.map((effect: Effect, index: number) => (
                   <div key={index} className="bg-white p-3 rounded border">
                     {effect.type === 'modifier' && (
                       <div className="flex items-center justify-between">

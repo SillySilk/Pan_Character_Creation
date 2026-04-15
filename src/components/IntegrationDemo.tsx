@@ -1,7 +1,7 @@
 // Complete Integration Demo Component
 // Demonstrates the entire balanced modifier system working together
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { tableEngine } from '../services/tableEngine'
 import { balancedChildhoodEventsTable } from '../data/tables/youth-balanced'
 import { balancedApprenticeshipsTable } from '../data/tables/occupations-balanced'
@@ -28,7 +28,6 @@ import type { Effect } from '../types/tables'
 export function IntegrationDemo() {
   const [character, setCharacter] = useState<Character | null>(null)
   const [currentStep, setCurrentStep] = useState<'start' | 'childhood' | 'adolescence' | 'adulthood' | 'apprentice' | 'personality' | 'complete'>('start')
-  const [selectedEffect, setSelectedEffect] = useState<Effect | null>(null)
   const [systemStatus, setSystemStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
   // Initialize the system on mount

@@ -5,11 +5,10 @@ import React, { useState } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { tableEngine } from '../../../services/tableEngine'
 import { balancedPersonalityTables } from '../../../data/tables/personality-balanced'
-import { TradeoffPreview, BalanceWarningSystem } from '../../ui'
+import { BalanceWarningSystem } from '../../ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/Card'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
-import type { Character } from '../../../types/character'
 
 interface PersonalityBalancedSelectorProps {
   onStepComplete?: () => void

@@ -269,7 +269,8 @@ export const useGenerationStore = create<GenerationStore>()(
     isActive: false,
     isPaused: false,
     characterId: null,
-    
+    currentStep: null,
+
     steps: createDefaultSteps(),
     currentStepIndex: 0,
     completedSteps: [],
@@ -638,6 +639,11 @@ export const useGenerationStore = create<GenerationStore>()(
           availableJumps: []
         }
       })
+    },
+
+    // addToHistory is an alias for createSnapshot
+    addToHistory: (description, characterState) => {
+      get().createSnapshot(description, characterState)
     },
 
     // History and undo/redo

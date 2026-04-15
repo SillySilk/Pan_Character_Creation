@@ -1,7 +1,7 @@
 // Streamlined Adulthood Selector - Automatic dice rolling with excitement
 // No accept/decline buttons - pure dice-driven character development
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { tableEngine } from '../../../services/tableEngine'
 import balancedAdulthoodEventsTable from '../../../data/tables/adulthood-balanced'
@@ -9,7 +9,6 @@ import { BalanceWarningSystem } from '../../ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/Card'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
-import type { Character } from '../../../types/character'
 
 interface StreamlinedAdulthoodSelectorProps {
   onStepComplete?: () => void
@@ -50,7 +49,7 @@ export function StreamlinedAdulthoodSelector({ onStepComplete }: StreamlinedAdul
         // Calculate actual 2d20 + SolMod roll
         const die1 = Math.floor(Math.random() * 20) + 1
         const die2 = Math.floor(Math.random() * 20) + 1
-        const solMod = character?.social || 0
+        const solMod = (character?.activeModifiers?.solMod) || 0
         const finalRoll = die1 + die2 + solMod
         
         setCurrentRoll(finalRoll)
@@ -139,7 +138,7 @@ export function StreamlinedAdulthoodSelector({ onStepComplete }: StreamlinedAdul
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
-            <Badge variant={phase === 'complete' ? 'success' : phase === 'rolling' ? 'default' : 'secondary'}>
+            <Badge variant={(phase as string) === 'complete' ? 'success' : phase === 'rolling' ? 'default' : 'secondary'}>
               Major Life Experience
             </Badge>
             <Badge variant="outline">2d20 + Social Modifier</Badge>
@@ -199,7 +198,7 @@ export function StreamlinedAdulthoodSelector({ onStepComplete }: StreamlinedAdul
         </Card>
       )}
 
-      {phase === 'complete' && (
+      {(phase as string) === 'complete' && (
         <Card className="border-green-300 bg-green-50">
           <CardContent className="text-center py-6">
             <div className="text-4xl mb-3">🎉</div>

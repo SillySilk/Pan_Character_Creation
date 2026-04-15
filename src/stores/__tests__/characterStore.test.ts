@@ -53,7 +53,7 @@ const mockCharacter: Character = {
   occupations: [],
   apprenticeships: [],
   hobbies: [],
-  skills: {},
+  skills: [],
   values: {
     mostValuedPerson: 'Family',
     mostValuedThing: 'Honor',
@@ -305,8 +305,8 @@ describe('Character Store', () => {
       store.addSkill(skill1)
       store.addSkill(skill2)
       
-      expect(store.character!.skills ? Object.keys(store.character!.skills).length : 0).toBe(1)
-      expect(store.character!.skills!['Diplomacy'].rank).toBe(4) // Should take higher rank
+      expect(store.character!.skills?.length ?? 0).toBe(1)
+      expect(store.character!.skills?.find(s => s.name === 'Diplomacy')?.rank).toBe(4) // Should take higher rank
     })
 
     it('should remove a skill by name', () => {
@@ -317,12 +317,12 @@ describe('Character Store', () => {
         type: 'Social',
         source: 'Background'
       }
-      
+
       store.addSkill(skill)
-      expect(store.character!.skills ? Object.keys(store.character!.skills).length : 0).toBe(1)
-      
+      expect(store.character!.skills?.length ?? 0).toBe(1)
+
       store.removeSkill('Bluff')
-      expect(store.character!.skills ? Object.keys(store.character!.skills).length : 0).toBe(0)
+      expect(store.character!.skills?.length ?? 0).toBe(0)
     })
 
     it('should update skill properties', () => {
@@ -338,9 +338,9 @@ describe('Character Store', () => {
       store.addSkill(skill)
       store.updateSkill('Craft', { rank: 3, specialty: 'Advanced Weaponsmithing' })
       
-      const updatedSkill = store.character!.skills!['Craft']
-      expect(updatedSkill.rank).toBe(3)
-      expect(updatedSkill.specialty).toBe('Advanced Weaponsmithing')
+      const updatedSkill = store.character!.skills!.find(s => s.name === 'Craft')
+      expect(updatedSkill!.rank).toBe(3)
+      expect(updatedSkill!.specialty).toBe('Advanced Weaponsmithing')
     })
   })
 

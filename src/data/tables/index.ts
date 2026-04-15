@@ -135,14 +135,15 @@ export function validateCrossReferences(): { isValid: boolean; errors: string[];
     table.entries.forEach(entry => {
       if (entry.goto) {
         // Extract table ID from goto reference
-        const match = entry.goto.match(/(\d+)/)
+        const gotoStr = typeof entry.goto === 'string' ? entry.goto : (entry.goto as { tableId: string }).tableId
+        const match = gotoStr.match(/(\d+)/)
         if (match) {
           const referencedId = match[1]
           if (!getTableById(referencedId)) {
             errors.push(`Table ${table.id}, entry ${entry.id}: references missing table ${referencedId}`)
           }
         } else {
-          warnings.push(`Table ${table.id}, entry ${entry.id}: could not parse goto reference "${entry.goto}"`)
+          warnings.push(`Table ${table.id}, entry ${entry.id}: could not parse goto reference "${gotoStr}"`)
         }
       }
       

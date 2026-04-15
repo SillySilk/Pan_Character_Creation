@@ -1,6 +1,6 @@
 // Contacts & Relationships Selection Component for PanCasting
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGenerationStore } from '../../../stores/generationStore'
 import { ContactTable } from './ContactTable'

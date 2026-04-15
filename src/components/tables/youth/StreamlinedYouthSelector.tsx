@@ -1,7 +1,7 @@
 // Streamlined Youth Selector - Automatic dice rolling with excitement
 // No accept/decline buttons - pure dice-driven character development
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { tableEngine } from '../../../services/tableEngine'
 import { balancedChildhoodEventsTable } from '../../../data/tables/youth-balanced'
@@ -10,7 +10,6 @@ import { BalanceWarningSystem } from '../../ui'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/Card'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
-import type { Character } from '../../../types/character'
 
 interface StreamlinedYouthSelectorProps {
   onStepComplete?: () => void
@@ -163,10 +162,10 @@ export function StreamlinedYouthSelector({ onStepComplete }: StreamlinedYouthSel
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
-            <Badge variant={phase === 'childhood-complete' || phase === 'adolescence-complete' || phase === 'complete' ? 'success' : phase.includes('childhood') ? 'default' : 'secondary'}>
+            <Badge variant={phase === 'childhood-complete' || phase === 'adolescence-complete' ? 'success' : phase.includes('childhood') ? 'default' : 'secondary'}>
               Childhood (Ages 1-12)
             </Badge>
-            <Badge variant={phase === 'adolescence-complete' || phase === 'complete' ? 'success' : phase.includes('adolescence') ? 'default' : 'secondary'}>
+            <Badge variant={phase === 'adolescence-complete' ? 'success' : phase.includes('adolescence') ? 'default' : 'secondary'}>
               Adolescence (Ages 13-18)
             </Badge>
           </div>

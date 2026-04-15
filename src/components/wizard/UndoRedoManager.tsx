@@ -2,8 +2,6 @@
 
 import React, { useEffect, useCallback, useState } from 'react'
 import { Character } from '../../types/character'
-import { useCharacterStore } from '../../stores/characterStore'
-import { useGenerationStore } from '../../stores/generationStore'
 import { useGenerationHistory } from '../../hooks/useGenerationHistory'
 
 interface HistoryEntry {

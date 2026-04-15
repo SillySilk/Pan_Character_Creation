@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TableEngine } from '../tableEngine'
-import type { Table, TableEntry, TableProcessingResult } from '@/types/tables'
+import type { Table, TableEntry } from '@/types/tables'
 
 // Mock table for testing
 const mockTable: Table = {
   id: 'test-table-001',
   name: 'Test Events Table',
-  category: 'Youth',
+  category: 'youth',
   description: 'A test table for unit testing',
   diceType: 'd20',
   modifier: 'cuMod',
@@ -68,6 +68,7 @@ const mockTable: Table = {
           effects: [
             {
               type: 'trait',
+              target: 'personality',
               value: 'Cautious',
               description: 'Gained Cautious trait'
             }
@@ -79,6 +80,7 @@ const mockTable: Table = {
           effects: [
             {
               type: 'trait',
+              target: 'personality',
               value: 'Bold',
               description: 'Gained Bold trait'
             }
@@ -109,7 +111,7 @@ const mockCharacter = {
   activeModifiers: { cuMod: 1, solMod: 0, tiMod: 0, biMod: 0, legitMod: 0 },
   skills: [],
   occupations: []
-}
+} as any
 
 describe('Table Engine', async () => {
   let engine: TableEngine
@@ -261,7 +263,7 @@ describe('Table Engine', async () => {
       const result = await engine.processTable(mockTable.id, mockCharacter)
       
       expect(result.selectedEntry.goto).toBeDefined()
-      expect(result.selectedEntry.goto!.tableId).toBe('another-table')
+      expect((result.selectedEntry.goto as { tableId: string }).tableId).toBe('another-table')
       expect(result.requiresGoto).toBe(true)
     })
 
@@ -292,7 +294,7 @@ describe('Table Engine', async () => {
       const result = engine.processTable(testTable, elfCharacter)
       
       expect(result.requiresGoto).toBe(true)
-      expect(result.selectedEntry.goto!.condition).toBe('race=Elf')
+      expect((result.selectedEntry.goto as { condition?: string }).condition).toBe('race=Elf')
     })
   })
 
